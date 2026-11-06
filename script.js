@@ -9,7 +9,7 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
 const S = {
-  city: store.get('city', 'Lahore'), lang: store.get('lang', 'en'),
+  city: store.get('city', null), lang: store.get('lang', 'en'),
   theme: store.get('theme', 'light'), method: store.get('method', 1),
   school: store.get('school', 1), notify: store.get('notify', false),
   adj: Object.assign({}, store.get('adj', null) || {}),
@@ -81,36 +81,34 @@ const PRAYERS = [
 ];
 const T = {
   en: { app:'Pakistan Namaz Timing', yesterday:'Yesterday', today:'Today', tomorrow:'Tomorrow', weekly:'Weekly', monthly:'Monthly',
-    chooseCity:'Choose city', search:'Search city in English or اردو', useLocation:'Use my location', settings:'Settings', adjTitle:'Adjust times (minutes)', adjNote:'Includes the usual Pakistani precautionary minutes (ihtiyat). Change any value to match your local mosque.', min:'min', reset:'Reset to Pakistan default',
+    chooseCity:'Choose city', pickCity:'Select city', welcomeTitle:'Select your city', welcomeText:'Choose your city or use your location to see prayer times.', search:'Search city in English or اردو', useLocation:'Use my location', settings:'Settings', adjTitle:'Adjust times (minutes)', adjNote:'Includes the usual Pakistani precautionary minutes (ihtiyat). Change any value to match your local mosque.', min:'min', reset:'Reset to Pakistan default',
     method:'Calculation method', asr:'Asr calculation', hanafi:'Hanafi', shafi:'Shafi', notify:'Notify me 10 minutes before each prayer',
     settingsNote:'Karachi (University of Islamic Sciences) with Hanafi Asr is the usual choice in Pakistan.',
-    disclaimer:'Hijri dates may differ by a day depending on local moon sighting. Calculated times can differ slightly from your local mosque timetable.',
     next:'Next prayer', nextTomorrow:'Next prayer (tomorrow)', sunrise:'Sunrise', loading:'Loading prayer times…', retry:'Retry',
     err:'Could not load prayer times. Check your internet connection.', cachedMsg:'You are offline: showing saved (cached) timings, which may be out of date.',
     selDate:'Selected date', isToday:'Today', viewing:'Viewing another date', backToday:'Go to today for the live countdown.',
-    none:'No city found. Try another spelling or province.', all:'All', date:'Date', source:'Data: AlAdhan Prayer Times API', live:'live',
+    none:'No city found. Try another spelling or province.', all:'All', date:'Date',
     cached:'cached', locFail:'Could not get your location. Please choose a city manually.', prayers:{Fajr:'Fajr',Dhuhr:'Dhuhr',Asr:'Asr',Maghrib:'Maghrib',Isha:'Isha'},
     juma:'Jumu\'ah', jumaTitle:'Jumu\'ah (Friday prayer)', jumaToday:'Today is Friday', jumaNext:'Next Friday', azan:'Azan / Dhuhr starts', khutbah:'Khutbah', jamaat:'Jamaat',
-    jumaSet:'Jumu\'ah timings (your mosque)', jumaNote:'Dhuhr start comes from the API. Khutbah and jamaat are set by each mosque, so enter your mosque\'s times.', jumaReset:'Reset to 1:00 / 1:30 PM',
+    jumaSet:'Jumu\'ah timings (your mosque)', jumaNote:'Enter your mosque\'s Friday times.', jumaReset:'Reset to 1:00 / 1:30 PM',
     jumaEarly:'The jamaat time you set is before Dhuhr starts, so the Dhuhr start time is used.', jumaIn:n => `in ${n} day${n === 1 ? '' : 's'}`,
     azanShort:'Azan', ends:'Ends', jamSet:'Jamaat timings (your mosque)', jamAfter:'min after azan', jamFixed:'or fixed time',
-    jamNote:'Azan times come from the API. Jamaat is set by each mosque: enter minutes after azan, or a fixed time (a fixed time earlier than azan is ignored).',
+    jamNote:'Set minutes after azan, or a fixed time.',
     jamReset:'Reset jamaat defaults', jamCol:'J' },
   ur: { app:'پاکستان نماز اوقات', yesterday:'کل (گزشتہ)', today:'آج', tomorrow:'کل (آئندہ)', weekly:'ہفتہ وار', monthly:'ماہانہ',
-    chooseCity:'شہر منتخب کریں', search:'شہر تلاش کریں', useLocation:'میری لوکیشن استعمال کریں', settings:'ترتیبات', adjTitle:'اوقات میں تبدیلی (منٹ)', adjNote:'اس میں پاکستان میں رائج احتیاطی منٹ شامل ہیں۔ اپنی مقامی مسجد کے مطابق کوئی بھی قدر تبدیل کریں۔', min:'منٹ', reset:'پاکستانی ڈیفالٹ بحال کریں',
+    chooseCity:'شہر منتخب کریں', pickCity:'شہر منتخب کریں', welcomeTitle:'اپنا شہر منتخب کریں', welcomeText:'نماز کے اوقات دیکھنے کے لیے اپنا شہر منتخب کریں یا لوکیشن استعمال کریں۔', search:'شہر تلاش کریں', useLocation:'میری لوکیشن استعمال کریں', settings:'ترتیبات', adjTitle:'اوقات میں تبدیلی (منٹ)', adjNote:'اس میں پاکستان میں رائج احتیاطی منٹ شامل ہیں۔ اپنی مقامی مسجد کے مطابق کوئی بھی قدر تبدیل کریں۔', min:'منٹ', reset:'پاکستانی ڈیفالٹ بحال کریں',
     method:'حساب کا طریقہ', asr:'عصر کا حساب', hanafi:'حنفی', shafi:'شافعی', notify:'ہر نماز سے 10 منٹ پہلے یاد دہانی',
     settingsNote:'پاکستان میں عموماً جامعہ علوم اسلامیہ کراچی اور حنفی عصر استعمال ہوتا ہے۔',
-    disclaimer:'ہجری تاریخ مقامی چاند نظر آنے کے مطابق ایک دن مختلف ہو سکتی ہے۔ حساب شدہ اوقات آپ کی مقامی مسجد کے نقشے سے قدرے مختلف ہو سکتے ہیں۔',
     next:'اگلی نماز', nextTomorrow:'اگلی نماز (کل)', sunrise:'طلوع آفتاب', loading:'نماز کے اوقات لوڈ ہو رہے ہیں…', retry:'دوبارہ کوشش کریں',
     err:'نماز کے اوقات لوڈ نہیں ہو سکے۔ انٹرنیٹ چیک کریں۔', cachedMsg:'آپ آف لائن ہیں: محفوظ شدہ (کیشڈ) اوقات دکھائے جا رہے ہیں جو پرانے ہو سکتے ہیں۔',
     selDate:'منتخب تاریخ', isToday:'آج', viewing:'دوسری تاریخ دیکھی جا رہی ہے', backToday:'براہِ راست کاؤنٹ ڈاؤن کے لیے آج پر جائیں۔',
-    none:'کوئی شہر نہیں ملا۔ کوئی اور املا یا صوبہ آزمائیں۔', all:'سب', date:'تاریخ', source:'ماخذ: AlAdhan پرئیر ٹائمز API', live:'براہِ راست',
+    none:'کوئی شہر نہیں ملا۔ کوئی اور املا یا صوبہ آزمائیں۔', all:'سب', date:'تاریخ',
     cached:'کیشڈ', locFail:'لوکیشن نہیں مل سکی۔ براہِ کرم شہر خود منتخب کریں۔', prayers:{Fajr:'فجر',Dhuhr:'ظہر',Asr:'عصر',Maghrib:'مغرب',Isha:'عشاء'},
     juma:'جمعہ', jumaTitle:'نمازِ جمعہ', jumaToday:'آج جمعہ ہے', jumaNext:'اگلا جمعہ', azan:'اذان / ظہر کا آغاز', khutbah:'خطبہ', jamaat:'جماعت',
-    jumaSet:'جمعہ کے اوقات (آپ کی مسجد)', jumaNote:'ظہر کا آغاز API سے آتا ہے۔ خطبہ اور جماعت کا وقت ہر مسجد خود طے کرتی ہے، اس لیے اپنی مسجد کے اوقات درج کریں۔', jumaReset:'1:00 / 1:30 بجے پر بحال کریں',
+    jumaSet:'جمعہ کے اوقات (آپ کی مسجد)', jumaNote:'اپنی مسجد کے جمعہ کے اوقات درج کریں۔', jumaReset:'1:00 / 1:30 بجے پر بحال کریں',
     jumaEarly:'آپ کا مقرر کردہ جماعت کا وقت ظہر کے آغاز سے پہلے ہے، اس لیے ظہر کے آغاز کا وقت استعمال کیا گیا ہے۔', jumaIn:n => `${n} دن میں`,
     azanShort:'اذان', ends:'وقت ختم', jamSet:'جماعت کے اوقات (آپ کی مسجد)', jamAfter:'منٹ اذان کے بعد', jamFixed:'یا مقررہ وقت',
-    jamNote:'اذان کے اوقات API سے آتے ہیں۔ جماعت کا وقت ہر مسجد خود طے کرتی ہے: اذان کے بعد منٹ درج کریں یا مقررہ وقت (اذان سے پہلے کا مقررہ وقت نظر انداز ہو گا)۔',
+    jamNote:'اذان کے بعد منٹ درج کریں یا مقررہ وقت۔',
     jamReset:'جماعت کے ڈیفالٹ بحال کریں', jamCol:'ج' }
 };
 const t = k => T[S.lang][k];
@@ -152,7 +150,7 @@ let current = null, tomorrowFajr = null, nextFajr = null, notified = '';
 /* ---------- Fetching prayer times (AlAdhan monthly calendar) ----------
    One request returns a whole month, so day changes inside a month need no new request. */
 const live = new Map();                                   // this-session results = live data
-const city = () => CITIES.find(c => c[0] === S.city) || CITIES[0];
+const city = () => CITIES.find(c => c[0] === S.city) || null;
 
 async function getMonth(y, m) {
   const c = city();
@@ -190,6 +188,10 @@ function status(msg, type, retry) {
 
 /* ---------- Main load + render ---------- */
 async function load() {
+  const has = !!city();
+  document.body.classList.toggle('no-city', !has);
+  $('#welcome').hidden = has;
+  if (!has) { current = null; status(''); return; }
   status(t('loading'), 'info');
   try {
     const { entry, cached } = await getDay(selected);
@@ -199,7 +201,6 @@ async function load() {
     try { nextFajr = clean((await getDay(addDays(selected, 1))).entry.timings.Fajr); } catch {}
     if (sameDay(selected, dayStart(pkNow()))) tomorrowFajr = nextFajr;
     status(cached ? t('cachedMsg') : '', 'info');
-    $('#source').textContent = `${t('source')} · ${S.city} · ${cached ? t('cached') : t('live')}`;
     render(); tick(); buildTable(); buildJuma();
   } catch (e) {
     current = null; $('#cards').innerHTML = '';
@@ -307,7 +308,7 @@ async function buildJuma() {
 
 /* ---------- City picker ---------- */
 let provFilter = 'all';
-function cityName(c) { return S.lang === 'ur' ? c[1] : c[0]; }
+function cityName(c) { return c ? (S.lang === 'ur' ? c[1] : c[0]) : t('pickCity'); }
 function provName(k) { return PROV[k][S.lang === 'ur' ? 1 : 0]; }
 function renderCities() {
   const q = $('#q').value.trim().toLowerCase();
@@ -327,9 +328,11 @@ $('#chips').onclick = e => { if (e.target.dataset.prov) { provFilter = e.target.
 $('#cityList').onclick = e => { const b = e.target.closest('[data-city]'); if (b) pickCity(b.dataset.city); };
 $('#q').oninput = renderCities;
 $('#clearQ').onclick = () => { $('#q').value = ''; renderCities(); $('#q').focus(); };
-$('#cityBtn').onclick = () => { renderCities(); $('#cityDlg').showModal(); };
+const openCities = () => { renderCities(); $('#cityDlg').showModal(); };
+$('#cityBtn').onclick = openCities;
+$('#wPick').onclick = openCities;
 // Optional geolocation: suggests the nearest city (nothing is stored or sent anywhere)
-$('#locBtn').onclick = () => {
+$('#wLoc').onclick = $('#locBtn').onclick = () => {
   if (!navigator.geolocation) return alert(t('locFail'));
   navigator.geolocation.getCurrentPosition(p => {
     const dist = c => (c[3] - p.coords.latitude) ** 2 + ((c[4] - p.coords.longitude) * Math.cos(c[3] * Math.PI / 180)) ** 2;
@@ -410,6 +413,7 @@ document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.close
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
 
 $('#refBtn').onclick = () => { live.clear(); load(); };
+if (!city()) openCities();   // first visit: ask the user to pick a city
 
 /* ---------- Start ---------- */
 applyTheme(); applyLang(); load();
