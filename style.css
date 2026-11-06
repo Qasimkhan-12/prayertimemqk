@@ -158,3 +158,49 @@ body.no-city .datebar,body.no-city .hero,body.no-city .cards,body.no-city .panel
 .quick button.on{background:var(--green);border-color:var(--green);color:#fff}
 .backtoday{margin-top:.8rem;background:var(--gold);color:#1b1b1b;border:0;border-radius:999px;padding:.45rem 1.2rem;font-weight:600;cursor:pointer}
 .backtoday[hidden]{display:none}
+
+/* ===== Install button ===== */
+.pill.install{background:var(--gold);color:#1b1b1b;border-color:transparent;font-weight:600}
+.pill.install[hidden],[hidden]{display:none!important}
+@media (max-width:560px){.pill.install span:last-child{display:none}}
+
+/* ===== Alerts prompt ===== */
+.alertbar{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;padding:.8rem 1rem;border-radius:14px;background:var(--green-soft);border:1px solid var(--line)}
+.alertbar p{flex:1;min-width:12rem}
+.alertbar button{border:0;border-radius:999px;padding:.4rem 1.1rem;font-weight:600;background:var(--green);color:#fff}
+.alertbar .ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+body.no-city .alertbar{display:none!important}
+
+/* ===== Reminder messages ===== */
+.toasts{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 4.2rem);z-index:20;display:grid;gap:.5rem;width:min(440px,94vw)}
+.toast{display:flex;gap:.7rem;align-items:flex-start;background:var(--card);color:var(--ink);border:2px solid var(--gold);border-radius:16px;padding:.75rem .9rem;box-shadow:0 12px 40px rgba(0,0,0,.25);animation:drop .35s ease-out}
+.toast .ti{font-size:1.4rem}
+.toast div{flex:1}
+.toast p{color:var(--mute);font-size:.88rem}
+.toast .icon{width:2rem;height:2rem;flex:none}
+@keyframes drop{from{opacity:0;transform:translateY(-12px)}}
+
+/* ===== Azan alarm ===== */
+.alarm{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:calc(env(safe-area-inset-top) + 1rem) 1rem calc(env(safe-area-inset-bottom) + 1rem);
+  background:radial-gradient(circle at 50% 0,rgba(224,185,90,.35),transparent 55%),#0b2e2a;color:#f4efd8;overflow:auto}
+.alarm-in{width:min(560px,100%);text-align:center;display:grid;gap:.5rem}
+.alarm-ic{font-size:3.2rem;line-height:1;animation:pulse 1.6s ease-in-out infinite}
+.alarm-label{letter-spacing:.08em;text-transform:uppercase;font-size:.85rem;opacity:.8}
+[dir="rtl"] .alarm-label{text-transform:none;letter-spacing:0}
+.alarm h2{font-size:clamp(2rem,7vw,3rem)}
+.alarm-time{opacity:.85;font-variant-numeric:tabular-nums}
+.azan{list-style:none;padding:0;margin:.6rem 0;max-height:46vh;overflow:auto;display:grid;gap:.4rem}
+.azan li{padding:.6rem .8rem;border-radius:14px;border:1px solid rgba(244,239,216,.15);opacity:.55;transition:opacity .4s,background .4s,transform .4s}
+.azan li.on{opacity:1;background:rgba(224,185,90,.16);border-color:#e0b95a;transform:scale(1.02)}
+.azan .ar{font-family:"Noto Nastaliq Urdu","Amiri","Traditional Arabic",serif;font-size:clamp(1.4rem,5vw,1.9rem);line-height:2;color:#e0b95a}
+.azan .ar small{font-size:.8rem;color:#f4efd8;opacity:.7}
+.azan .tr{font-style:italic;font-family:Inter,system-ui,sans-serif;line-height:1.4}
+.azan .mean{font-size:.88rem;opacity:.8}
+.stop{justify-self:center;margin-top:.4rem;background:#e0b95a;color:#1b1b1b;border:0;border-radius:999px;padding:1rem 2.6rem;font-size:1.15rem;font-weight:700;box-shadow:0 0 0 0 rgba(224,185,90,.7);animation:ring 1.6s infinite}
+body.ringing{overflow:hidden}
+@keyframes pulse{50%{transform:scale(1.12)}}
+@keyframes ring{70%{box-shadow:0 0 0 18px rgba(224,185,90,0)}100%{box-shadow:0 0 0 0 rgba(224,185,90,0)}}
+@media (prefers-reduced-motion:reduce){.alarm-ic,.stop{animation:none}}
+
+/* Installed app: respect phone notches */
+@media (display-mode:standalone){.top{padding-top:calc(env(safe-area-inset-top) + .6rem)}}
