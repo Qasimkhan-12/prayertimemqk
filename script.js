@@ -11,8 +11,17 @@ const store = {
 const S = {
   city: store.get('city', 'Lahore'), lang: store.get('lang', 'en'),
   theme: store.get('theme', 'light'), method: store.get('method', 1),
-  school: store.get('school', 1), notify: store.get('notify', false)
+  school: store.get('school', 1), notify: store.get('notify', false),
+  adj: Object.assign({}, store.get('adj', null) || {})
 };
+/* Precautionary minutes (ihtiyat) used by Pakistani mosque timetables.
+   Raw astronomy gives Dhuhr exactly at zawal and Maghrib exactly at sunset,
+   which is why plain calculated times look a few minutes early in Pakistan. */
+const IHTIYAT = { Fajr:2, Sunrise:-2, Dhuhr:5, Asr:2, Maghrib:3, Isha:2 };
+const ADJ_KEYS = Object.keys(IHTIYAT);
+ADJ_KEYS.forEach(k => { if (typeof S.adj[k] !== 'number') S.adj[k] = IHTIYAT[k]; });
+// AlAdhan "tune" order: Imsak,Fajr,Sunrise,Dhuhr,Asr,Maghrib,Sunset,Isha,Midnight
+const tune = () => [S.adj.Fajr, S.adj.Fajr, S.adj.Sunrise, S.adj.Dhuhr, S.adj.Asr, S.adj.Maghrib, S.adj.Maghrib, S.adj.Isha, 0].join(',');
 
 /* ---------- City database: [English, Urdu, province, lat, lng] ----------
    To add a city, just add one more line to this array. */
@@ -59,7 +68,7 @@ const PRAYERS = [
 ];
 const T = {
   en: { app:'Pakistan Namaz Timing', yesterday:'Yesterday', today:'Today', tomorrow:'Tomorrow', weekly:'Weekly', monthly:'Monthly',
-    chooseCity:'Choose city', search:'Search city in English or اردو', useLocation:'Use my location', settings:'Settings',
+    chooseCity:'Choose city', search:'Search city in English or اردو', useLocation:'Use my location', settings:'Settings', adjTitle:'Adjust times (minutes)', adjNote:'Includes the usual Pakistani precautionary minutes (ihtiyat). Change any value to match your local mosque.', min:'min', reset:'Reset to Pakistan default',
     method:'Calculation method', asr:'Asr calculation', hanafi:'Hanafi', shafi:'Shafi', notify:'Notify me 10 minutes before each prayer',
     settingsNote:'Karachi (University of Islamic Sciences) with Hanafi Asr is the usual choice in Pakistan.',
     disclaimer:'Hijri dates may differ by a day depending on local moon sighting. Calculated times can differ slightly from your local mosque timetable.',
@@ -69,7 +78,7 @@ const T = {
     none:'No city found. Try another spelling or province.', all:'All', date:'Date', source:'Data: AlAdhan Prayer Times API', live:'live',
     cached:'cached', locFail:'Could not get your location. Please choose a city manually.', prayers:{Fajr:'Fajr',Dhuhr:'Dhuhr',Asr:'Asr',Maghrib:'Maghrib',Isha:'Isha'} },
   ur: { app:'پاکستان نماز اوقات', yesterday:'کل (گزشتہ)', today:'آج', tomorrow:'کل (آئندہ)', weekly:'ہفتہ وار', monthly:'ماہانہ',
-    chooseCity:'شہر منتخب کریں', search:'شہر تلاش کریں', useLocation:'میری لوکیشن استعمال کریں', settings:'ترتیبات',
+    chooseCity:'شہر منتخب کریں', search:'شہر تلاش کریں', useLocation:'میری لوکیشن استعمال کریں', settings:'ترتیبات', adjTitle:'اوقات میں تبدیلی (منٹ)', adjNote:'اس میں پاکستان میں رائج احتیاطی منٹ شامل ہیں۔ اپنی مقامی مسجد کے مطابق کوئی بھی قدر تبدیل کریں۔', min:'منٹ', reset:'پاکستانی ڈیفالٹ بحال کریں',
     method:'حساب کا طریقہ', asr:'عصر کا حساب', hanafi:'حنفی', shafi:'شافعی', notify:'ہر نماز سے 10 منٹ پہلے یاد دہانی',
     settingsNote:'پاکستان میں عموماً جامعہ علوم اسلامیہ کراچی اور حنفی عصر استعمال ہوتا ہے۔',
     disclaimer:'ہجری تاریخ مقامی چاند نظر آنے کے مطابق ایک دن مختلف ہو سکتی ہے۔ حساب شدہ اوقات آپ کی مقامی مسجد کے نقشے سے قدرے مختلف ہو سکتے ہیں۔',
@@ -102,10 +111,10 @@ const city = () => CITIES.find(c => c[0] === S.city) || CITIES[0];
 
 async function getMonth(y, m) {
   const c = city();
-  const key = `nt:${c[0]}:${S.method}:${S.school}:${y}-${m}`;
+  const key = `nt2:${c[0]}:${S.method}:${S.school}:${tune()}:${y}-${m}`;
   if (live.has(key)) return { data: live.get(key), cached: false };
   try {
-    const url = `${API}/${y}/${m}?latitude=${c[3]}&longitude=${c[4]}&method=${S.method}&school=${S.school}&timezonestring=${TZ}`;
+    const url = `${API}/${y}/${m}?latitude=${c[3]}&longitude=${c[4]}&method=${S.method}&school=${S.school}&tune=${tune()}&timezonestring=${TZ}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(res.status);
     const json = await res.json();
@@ -274,7 +283,7 @@ function applyLang() {
   $('#langSel').value = S.lang;
   $('#cityName').textContent = cityName(city());
   document.title = t('app');
-  render(); tick(); buildTable(); renderCities();
+  render(); tick(); buildTable(); renderCities(); renderAdj();
 }
 $('#langSel').onchange = e => { S.lang = e.target.value; store.set('lang', S.lang); applyLang(); };
 
@@ -282,6 +291,16 @@ $('#method').value = S.method; $('#school').value = S.school; $('#notify').check
 $('#setBtn').onclick = () => $('#setDlg').showModal();
 $('#method').onchange = e => { S.method = +e.target.value; store.set('method', S.method); load(); };
 $('#school').onchange = e => { S.school = +e.target.value; store.set('school', S.school); load(); };
+function renderAdj() {
+  $('#adj').innerHTML = ADJ_KEYS.map(k => `<label class="adj"><span>${k === 'Sunrise' ? t('sunrise') : t('prayers')[k]}</span>
+    <input type="number" min="-30" max="30" step="1" data-adj="${k}" value="${S.adj[k]}"> <small>${t('min')}</small></label>`).join('');
+}
+$('#adj').onchange = e => {
+  const k = e.target.dataset.adj; if (!k) return;
+  const v = Math.max(-30, Math.min(30, Math.round(+e.target.value || 0)));
+  e.target.value = v; S.adj[k] = v; store.set('adj', S.adj); load();
+};
+$('#adjReset').onclick = () => { S.adj = { ...IHTIYAT }; store.set('adj', S.adj); renderAdj(); load(); };
 $('#notify').onchange = async e => {
   let on = e.target.checked;
   if (on && 'Notification' in window) on = (await Notification.requestPermission()) === 'granted';
