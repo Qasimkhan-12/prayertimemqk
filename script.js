@@ -12,6 +12,8 @@ const S = {
   city: store.get('city', null), lang: store.get('lang', 'en'),
   theme: store.get('theme', 'light'), method: store.get('method', 1),
   school: store.get('school', 1), notify: store.get('notify', false),
+  rem10: store.get('rem10', false), rem3: store.get('rem3', false), alarm: store.get('alarm', false),
+  sound: store.get('sound', 'chime'),
   adj: Object.assign({}, store.get('adj', null) || {}),
   juma: Object.assign({}, store.get('juma', null) || {}),
   jam: Object.assign({}, store.get('jam', null) || {})
@@ -82,7 +84,18 @@ const PRAYERS = [
 const T = {
   en: { app:'Pakistan Namaz Timing', yesterday:'Yesterday', today:'Today', tomorrow:'Tomorrow', weekly:'Weekly', monthly:'Monthly',
     chooseCity:'Choose city', pickCity:'Select city', welcomeTitle:'Select your city', welcomeText:'Choose your city or use your location to see prayer times.', search:'Search city in English or اردو', useLocation:'Use my location', settings:'Settings', adjTitle:'Adjust times (minutes)', adjNote:'Includes the usual Pakistani precautionary minutes (ihtiyat). Change any value to match your local mosque.', min:'min', reset:'Reset to Pakistan default',
-    method:'Calculation method', asr:'Asr calculation', hanafi:'Hanafi', shafi:'Shafi', notify:'Notify me 10 minutes before each prayer',
+    method:'Calculation method', asr:'Asr calculation', hanafi:'Hanafi', shafi:'Shafi', notify:'Show phone / computer notifications',
+    alertsTitle:'Reminders & azan alarm', rem10:'Reminder 10 minutes before each prayer', rem3:'Reminder 3 minutes before Jumu\'ah',
+    alarmOpt:'Ring azan alarm at prayer time (keeps ringing until you stop it)', sound:'Alarm sound', soundChime:'Built-in chime',
+    soundFile:'My azan audio file', pickFile:'Choose an azan audio file (mp3, m4a…)', testAlarm:'▶ Test alarm', stop:'Stop alarm',
+    alertsNote:'Keep the app open (it can stay in the background) so reminders and the alarm can ring. Phones may pause apps when the screen is locked, so keep sound on and the app open near prayer time.',
+    alertAsk:'Turn on prayer reminders (10 min before, 3 min before Jumu\'ah) and the azan alarm?', turnOn:'Turn on', later:'Later',
+    install:'Install app', installTitle:'Install on your device', installed:'The app is installed on this device. ✓',
+    installReady:'Tap “Install app” to add it to your home screen or desktop. It opens like a normal app and works offline.',
+    installIOS:'On iPhone / iPad: open this page in Safari, tap the Share button (⬆), then “Add to Home Screen”.',
+    installOther:'Open your browser menu (⋮ or ⋯) and choose “Install app” or “Add to Home screen”.',
+    alarmNow:'It is time for prayer', remIn:(p, n) => `${p} in ${n} minute${n === 1 ? '' : 's'}`, jumaRem:n => `Jumu'ah jamaat in ${n} minute${n === 1 ? '' : 's'}`,
+    testLabel:'Test alarm', noFile:'No audio file chosen yet, so the built-in chime is used.', fileSaved:'Saved:',
     settingsNote:'Karachi (University of Islamic Sciences) with Hanafi Asr is the usual choice in Pakistan.',
     next:'Next prayer', nextTomorrow:'Next prayer (tomorrow)', sunrise:'Sunrise', loading:'Loading prayer times…', retry:'Retry',
     err:'Could not load prayer times. Check your internet connection.', cachedMsg:'You are offline: showing saved (cached) timings, which may be out of date.',
@@ -99,7 +112,18 @@ const T = {
     jamReset:'Reset jamaat defaults', jamCol:'J' },
   ur: { app:'پاکستان نماز اوقات', yesterday:'کل (گزشتہ)', today:'آج', tomorrow:'کل (آئندہ)', weekly:'ہفتہ وار', monthly:'ماہانہ',
     chooseCity:'شہر منتخب کریں', pickCity:'شہر منتخب کریں', welcomeTitle:'اپنا شہر منتخب کریں', welcomeText:'نماز کے اوقات دیکھنے کے لیے اپنا شہر منتخب کریں یا لوکیشن استعمال کریں۔', search:'شہر تلاش کریں', useLocation:'میری لوکیشن استعمال کریں', settings:'ترتیبات', adjTitle:'اوقات میں تبدیلی (منٹ)', adjNote:'اس میں پاکستان میں رائج احتیاطی منٹ شامل ہیں۔ اپنی مقامی مسجد کے مطابق کوئی بھی قدر تبدیل کریں۔', min:'منٹ', reset:'پاکستانی ڈیفالٹ بحال کریں',
-    method:'حساب کا طریقہ', asr:'عصر کا حساب', hanafi:'حنفی', shafi:'شافعی', notify:'ہر نماز سے 10 منٹ پہلے یاد دہانی',
+    method:'حساب کا طریقہ', asr:'عصر کا حساب', hanafi:'حنفی', shafi:'شافعی', notify:'فون / کمپیوٹر پر نوٹیفکیشن دکھائیں',
+    alertsTitle:'یاد دہانی اور اذان الارم', rem10:'ہر نماز سے 10 منٹ پہلے یاد دہانی', rem3:'جمعہ سے 3 منٹ پہلے یاد دہانی',
+    alarmOpt:'نماز کے وقت اذان کا الارم بجائیں (بند کرنے تک بجتا رہے گا)', sound:'الارم کی آواز', soundChime:'بلٹ اِن گھنٹی',
+    soundFile:'میری اذان کی آڈیو فائل', pickFile:'اذان کی آڈیو فائل منتخب کریں (mp3، m4a…)', testAlarm:'▶ الارم آزمائیں', stop:'الارم بند کریں',
+    alertsNote:'یاد دہانی اور الارم کے لیے ایپ کھلی رکھیں (پس منظر میں بھی چل سکتی ہے)۔ فون اسکرین لاک ہونے پر ایپ روک سکتا ہے، اس لیے نماز کے وقت آواز آن اور ایپ کھلی رکھیں۔',
+    alertAsk:'نماز کی یاد دہانی (10 منٹ پہلے، جمعہ سے 3 منٹ پہلے) اور اذان الارم آن کریں؟', turnOn:'آن کریں', later:'بعد میں',
+    install:'ایپ انسٹال کریں', installTitle:'اپنے آلے پر انسٹال کریں', installed:'ایپ اس آلے پر انسٹال ہے۔ ✓',
+    installReady:'”ایپ انسٹال کریں“ دبائیں تاکہ یہ ہوم اسکرین یا ڈیسک ٹاپ پر آ جائے۔ یہ عام ایپ کی طرح کھلتی ہے اور آف لائن بھی چلتی ہے۔',
+    installIOS:'آئی فون / آئی پیڈ: یہ صفحہ Safari میں کھولیں، شیئر بٹن (⬆) دبائیں، پھر ”Add to Home Screen“ منتخب کریں۔',
+    installOther:'براؤزر کا مینو (⋮ یا ⋯) کھولیں اور ”Install app“ یا ”Add to Home screen“ منتخب کریں۔',
+    alarmNow:'نماز کا وقت ہو گیا ہے', remIn:(p, n) => `${p} میں ${n} منٹ باقی`, jumaRem:n => `جمعہ کی جماعت میں ${n} منٹ باقی`,
+    testLabel:'الارم کی آزمائش', noFile:'ابھی کوئی آڈیو فائل منتخب نہیں کی گئی، اس لیے بلٹ اِن گھنٹی استعمال ہو گی۔', fileSaved:'محفوظ:',
     settingsNote:'پاکستان میں عموماً جامعہ علوم اسلامیہ کراچی اور حنفی عصر استعمال ہوتا ہے۔',
     next:'اگلی نماز', nextTomorrow:'اگلی نماز (کل)', sunrise:'طلوع آفتاب', loading:'نماز کے اوقات لوڈ ہو رہے ہیں…', retry:'دوبارہ کوشش کریں',
     err:'نماز کے اوقات لوڈ نہیں ہو سکے۔ انٹرنیٹ چیک کریں۔', cachedMsg:'آپ آف لائن ہیں: محفوظ شدہ (کیشڈ) اوقات دکھائے جا رہے ہیں جو پرانے ہو سکتے ہیں۔',
@@ -152,7 +176,7 @@ let selected = dayStart(pkNow());
 let today0 = dayStart(pkNow());                          // used to follow midnight rollover
 const dayDiff = d => Math.round((dayStart(d) - dayStart(pkNow())) / 864e5);   // -1 yesterday, 0 today, 1 tomorrow
 let loadId = 0;
-let current = null, tomorrowFajr = null, nextFajr = null, notified = '';
+let current = null, tomorrowFajr = null, nextFajr = null;
 
 /* ---------- Fetching prayer times (AlAdhan monthly calendar) ----------
    One request returns a whole month, so day changes inside a month need no new request. */
@@ -199,6 +223,7 @@ async function load() {
   document.body.classList.toggle('no-city', !has);
   $('#welcome').hidden = has;
   if (!has) { current = null; status(''); return; }
+  alertDay = null;                                        // re-read today's times for reminders
   const id = ++loadId, day = selected;                    // ignore results of older, slower requests
   markQuick();
   status(t('loading'), 'info');
@@ -288,11 +313,6 @@ function tick() {
   else $('#heroSub').textContent = `${t('azanShort')} ${to12(tomorrowFajr)}`;
   $('#count').textContent = hms(sec);
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('next', !tomorrow && c.dataset.p === next.k));
-  // Optional notification, only if the user enabled it and allowed permission
-  if (S.notify && 'Notification' in window && Notification.permission === 'granted' && sec <= 600 && notified !== next.k + iso(when)) {
-    notified = next.k + iso(when);
-    new Notification(`${pName(nd, next.k)} – ${to12(when.toTimeString().slice(0,5))}`, { body: S.city });
-  }
 }
 setInterval(tick, 1000);
 
@@ -357,7 +377,7 @@ function renderCities() {
 function pickCity(name) {
   S.city = name; store.set('city', name);
   $('#cityName').textContent = cityName(city());
-  $('#cityDlg').close(); load();
+  $('#cityDlg').close(); load(); syncAlertUI();
 }
 $('#chips').onclick = e => { if (e.target.dataset.prov) { provFilter = e.target.dataset.prov; renderCities(); } };
 $('#cityList').onclick = e => { const b = e.target.closest('[data-city]'); if (b) pickCity(b.dataset.city); };
@@ -405,11 +425,11 @@ function applyLang() {
   $('#langSel').value = S.lang;
   $('#cityName').textContent = cityName(city());
   document.title = t('app');
-  render(); tick(); buildTable(); buildJuma(); renderCities(); renderAdj(); renderJam();
+  render(); tick(); buildTable(); buildJuma(); renderCities(); renderAdj(); renderJam(); installUI(); fileUI();
 }
 $('#langSel').onchange = e => { S.lang = e.target.value; store.set('lang', S.lang); applyLang(); };
 
-$('#method').value = S.method; $('#school').value = S.school; $('#notify').checked = S.notify;
+$('#method').value = S.method; $('#school').value = S.school;
 $('#setBtn').onclick = () => $('#setDlg').showModal();
 $('#method').onchange = e => { S.method = +e.target.value; store.set('method', S.method); load(); };
 $('#school').onchange = e => { S.school = +e.target.value; store.set('school', S.school); load(); };
@@ -444,17 +464,245 @@ $('#jamSet').onchange = e => {
 $('#jamReset').onclick = () => { S.jam = {}; Object.keys(JAM_DEFAULT).forEach(k => S.jam[k] = { after: JAM_DEFAULT[k], fixed:'' }); saveJam(); };
 $('#jumaReset').onclick = () => { S.juma = { ...JUMA_DEFAULT }; saveJuma(); };
 syncJuma();
-$('#notify').onchange = async e => {
-  let on = e.target.checked;
-  if (on && 'Notification' in window) on = (await Notification.requestPermission()) === 'granted';
-  else if (on) on = false;
-  S.notify = on; e.target.checked = on; store.set('notify', on);
-};
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
 
 $('#refBtn').onclick = () => { live.clear(); load(); };
 if (!city()) openCities();   // first visit: ask the user to pick a city
+
+/* =====================================================================
+   INSTALL AS AN APP (phone, tablet, computer)
+   ===================================================================== */
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: window-controls-overlay)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let installEvt = null;
+function installUI() {
+  const can = !!installEvt, done = isStandalone();
+  $('#installBtn').hidden = done || !(can || isIOS());
+  $('#installBtn2').hidden = done || !can;
+  $('#installHelp').textContent = done ? t('installed') : can ? t('installReady') : isIOS() ? t('installIOS') : t('installOther');
+}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; installUI(); });
+window.addEventListener('appinstalled', () => { installEvt = null; installUI(); });
+async function doInstall() {
+  if (installEvt) { installEvt.prompt(); try { await installEvt.userChoice; } catch {} installEvt = null; installUI(); }
+  else { $('#setDlg').showModal(); $('#installHelp').scrollIntoView({ block:'center' }); }
+}
+$('#installBtn').onclick = doInstall;
+$('#installBtn2').onclick = doInstall;
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'stop-alarm') stopAlarm(); });
+}
+
+/* =====================================================================
+   SOUND: built-in chime (generated) or the user's own azan audio file
+   ===================================================================== */
+let ac = null, chimeBuf = null, src = null, audioEl = null, fileURL = null;
+const AC = window.AudioContext || window.webkitAudioContext;
+// Browsers only allow sound after the user has touched the page once: unlock on first tap/click/key.
+function unlockAudio() {
+  if (!AC) return;
+  if (!ac) ac = new AC();
+  if (ac.state === 'suspended') ac.resume().catch(() => {});
+}
+['pointerdown','keydown','touchend'].forEach(ev => document.addEventListener(ev, unlockAudio, { passive:true }));
+
+/* A soft, bell-like chime pattern, rendered once into a buffer and looped. */
+function makeChime() {
+  const rate = ac.sampleRate, len = Math.floor(rate * 4.5), buf = ac.createBuffer(1, len, rate), d = buf.getChannelData(0);
+  const notes = [[0, 587.33], [0.55, 880], [1.1, 783.99], [1.65, 587.33], [2.4, 880]];   // D5 A5 G5 D5 A5
+  notes.forEach(([at, f]) => {
+    const s0 = Math.floor(at * rate);
+    for (let i = 0; s0 + i < len; i++) {
+      const tt = i / rate, env = Math.exp(-tt * 2.6) * Math.min(1, tt * 200);
+      d[s0 + i] += env * 0.32 * (Math.sin(2 * Math.PI * f * tt) + 0.35 * Math.sin(4 * Math.PI * f * tt) + 0.12 * Math.sin(6 * Math.PI * f * tt));
+    }
+  });
+  return buf;
+}
+function playChime(loop) {
+  unlockAudio(); if (!ac) return;
+  chimeBuf = chimeBuf || makeChime();
+  const n = ac.createBufferSource(); n.buffer = chimeBuf; n.loop = loop; n.connect(ac.destination); n.start();
+  if (loop) src = n;
+}
+
+/* The user's own azan file is kept in the browser (IndexedDB) – never uploaded. */
+const idb = () => new Promise((ok, no) => { const r = indexedDB.open('namaz', 1); r.onupgradeneeded = () => r.result.createObjectStore('files'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+async function fileGet() { try { const db = await idb(); return await new Promise(ok => { const q = db.transaction('files').objectStore('files').get('azan'); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); }); } catch { return null; } }
+async function fileSet(f) { const db = await idb(); return new Promise((ok, no) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').put(f, 'azan'); tx.oncomplete = ok; tx.onerror = () => no(tx.error); }); }
+async function prepareFile() {
+  if (audioEl) return audioEl;
+  const f = await fileGet(); if (!f) return null;
+  if (fileURL) URL.revokeObjectURL(fileURL);
+  fileURL = URL.createObjectURL(f);
+  audioEl = new Audio(fileURL); audioEl.loop = true; audioEl.preload = 'auto';
+  return audioEl;
+}
+async function fileUI() {
+  $('#fileRow').hidden = S.sound !== 'file';
+  const f = S.sound === 'file' ? await fileGet() : null;
+  $('#fileName').textContent = S.sound !== 'file' ? '' : f ? `${t('fileSaved')} ${f.name || 'azan'}` : t('noFile');
+}
+
+/* =====================================================================
+   AZAN ALARM: full-screen, keeps ringing until the user stops it
+   ===================================================================== */
+const AZAN = [
+  { ar:'اللّٰهُ أَكْبَرُ، اللّٰهُ أَكْبَرُ', tr:'Allāhu akbar, Allāhu akbar', en:'Allah is the Greatest', ur:'اللہ سب سے بڑا ہے', x:2 },
+  { ar:'أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللّٰهُ', tr:'Ash-hadu an lā ilāha illallāh', en:'I bear witness that there is no god but Allah', ur:'میں گواہی دیتا ہوں کہ اللہ کے سوا کوئی معبود نہیں', x:2 },
+  { ar:'أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللّٰهِ', tr:'Ash-hadu anna Muḥammadar-rasūlullāh', en:'I bear witness that Muhammad ﷺ is the Messenger of Allah', ur:'میں گواہی دیتا ہوں کہ محمد ﷺ اللہ کے رسول ہیں', x:2 },
+  { ar:'حَيَّ عَلَى الصَّلَاةِ', tr:'Ḥayya ʿalaṣ-ṣalāh', en:'Come to prayer', ur:'آؤ نماز کی طرف', x:2 },
+  { ar:'حَيَّ عَلَى الْفَلَاحِ', tr:'Ḥayya ʿalal-falāḥ', en:'Come to success', ur:'آؤ کامیابی کی طرف', x:2 },
+  { ar:'الصَّلَاةُ خَيْرٌ مِنَ النَّوْمِ', tr:'Aṣ-ṣalātu khayrum minan-nawm', en:'Prayer is better than sleep', ur:'نماز نیند سے بہتر ہے', x:2, fajr:true },
+  { ar:'اللّٰهُ أَكْبَرُ، اللّٰهُ أَكْبَرُ', tr:'Allāhu akbar, Allāhu akbar', en:'Allah is the Greatest', ur:'اللہ سب سے بڑا ہے', x:1 },
+  { ar:'لَا إِلٰهَ إِلَّا اللّٰهُ', tr:'Lā ilāha illallāh', en:'There is no god but Allah', ur:'اللہ کے سوا کوئی معبود نہیں', x:1 }
+];
+let ringing = false, lineTimer = null, buzzTimer = null, oldTitle = '';
+async function startAlarm(title, label, timeText, isFajr) {
+  stopAlarm();
+  ringing = true;
+  const lines = AZAN.filter(l => !l.fajr || isFajr);
+  $('#alarmLabel').textContent = label;
+  $('#alarmName').textContent = title;
+  $('#alarmTime').textContent = timeText;
+  $('#azanLines').innerHTML = lines.map(l => `<li><p class="ar" lang="ar" dir="rtl">${l.ar}${l.x > 1 ? ` <small>×${l.x}</small>` : ''}</p>
+    <p class="tr" dir="ltr">${l.tr}</p><p class="mean">${S.lang === 'ur' ? l.ur : l.en}</p></li>`).join('');
+  $('#alarmView').hidden = false;
+  document.body.classList.add('ringing');
+  // Highlight the azan lines one after another, again and again, while ringing
+  const items = [...document.querySelectorAll('#azanLines li')]; let i = 0;
+  const step = () => { items.forEach((li, j) => li.classList.toggle('on', j === i)); items[i].scrollIntoView({ block:'nearest', behavior:'smooth' }); i = (i + 1) % items.length; };
+  step(); lineTimer = setInterval(step, 4000);
+  // Sound (loops until stopped)
+  let played = false;
+  if (S.sound === 'file') {
+    const a = await prepareFile();
+    if (a && ringing) { try { a.currentTime = 0; await a.play(); played = true; } catch {} }
+  }
+  if (!played && ringing) playChime(true);
+  // Vibrate on phones that support it
+  if (navigator.vibrate) { const v = () => navigator.vibrate([700, 300, 700, 300, 700]); v(); buzzTimer = setInterval(v, 3500); }
+  oldTitle = document.title; document.title = `🔔 ${title}`;
+  $('#stopAlarm').focus();
+}
+function stopAlarm() {
+  if (!ringing) return;
+  ringing = false;
+  if (src) { try { src.stop(); } catch {} src = null; }
+  if (audioEl) { audioEl.pause(); }
+  clearInterval(lineTimer); clearInterval(buzzTimer);
+  if (navigator.vibrate) navigator.vibrate(0);
+  $('#alarmView').hidden = true;
+  document.body.classList.remove('ringing');
+  if (oldTitle) document.title = oldTitle;
+  if (navigator.serviceWorker && navigator.serviceWorker.getRegistration)
+    navigator.serviceWorker.getRegistration().then(r => r && r.getNotifications({ tag:'azan' }).then(ns => ns.forEach(n => n.close()))).catch(() => {});
+}
+$('#stopAlarm').onclick = stopAlarm;
+document.addEventListener('keydown', e => { if (ringing && e.key === 'Escape') stopAlarm(); });
+
+/* =====================================================================
+   MESSAGES: in-app banner + system notification
+   ===================================================================== */
+function toast(title, body) {
+  const el = document.createElement('div'); el.className = 'toast';
+  el.innerHTML = `<span class="ti">🔔</span><div><b></b><p></p></div><button class="icon" aria-label="Close">✕</button>`;
+  el.querySelector('b').textContent = title; el.querySelector('p').textContent = body;
+  el.querySelector('button').onclick = () => el.remove();
+  $('#toasts').append(el);
+  setTimeout(() => el.remove(), 120000);
+}
+async function sysNotify(title, body, alarm) {
+  if (!S.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const opt = { body, icon:'/icons/icon-192.png', badge:'/icons/icon-192.png', tag: alarm ? 'azan' : 'reminder', renotify:true,
+    requireInteraction: !!alarm, vibrate: alarm ? [700, 300, 700, 300, 700] : [300, 150, 300], silent:false };
+  if (alarm) opt.actions = [{ action:'stop', title: t('stop') }];
+  try {
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) return reg.showNotification(title, opt);            // works on Android and installed apps
+    delete opt.actions; new Notification(title, opt);
+  } catch {}
+}
+
+/* =====================================================================
+   SCHEDULER: checks today's times every second
+   - 10 minutes before each prayer: reminder
+   - 3 minutes before Jumu'ah jamaat (Fridays): reminder
+   - at azan time: alarm with azan lines, ringing until stopped
+   ===================================================================== */
+let alertDay = null, alertEntry = null, alertBusy = false;
+const fired = new Set(store.get('fired', []));
+function markFired(id) {
+  fired.add(id);
+  const keep = [...fired].filter(x => x.endsWith(iso(pkNow())));
+  store.set('fired', keep);
+}
+async function checkAlerts() {
+  if (!city() || !(S.rem10 || S.rem3 || S.alarm)) return;
+  const now = pkNow(), d = dayStart(now), key = iso(d);
+  if (alertDay !== key) {
+    if (alertBusy) return;
+    alertBusy = true;
+    try { alertEntry = (await getDay(d)).entry; alertDay = key; } catch { alertEntry = null; }
+    alertBusy = false;
+    if (!alertEntry) return;
+  }
+  const e = alertEntry, fri = isFri(d), M = 60000;
+  for (const p of PRAYERS) {
+    const juma = fri && p.k === 'Dhuhr';
+    const azanS = clean(e.timings[p.k]), target = atTime(d, pTime(d, e, p.k)), azan = atTime(d, azanS);
+    const name = pName(d, p.k), jam = to12(jamTime(d, e, p.k));
+    const left = Math.ceil((target - now) / M);
+    const info = juma ? `${t('khutbah')} ${to12(S.juma.khutbah)} · ${t('jamaat')} ${jam}` : `${t('azanShort')} ${to12(azanS)} · ${t('jamaat')} ${jam}`;
+    const run = (id, from, to, fn) => { const fid = `${id}:${p.k}:${key}`; if (now >= from && now < to && !fired.has(fid)) { markFired(fid); fn(); } };
+    if (S.rem10) run('r10', target - 10 * M, juma && S.rem3 ? target - 3 * M : target, () => {
+      const msg = juma ? t('jumaRem')(left) : t('remIn')(name, left);
+      toast(msg, info); sysNotify(msg, `${info} · ${cityName(city())}`); if (!ringing) playChime(false);
+    });
+    if (S.rem3 && juma) run('r3', target - 3 * M, target, () => {
+      const msg = t('jumaRem')(left);
+      toast(msg, info); sysNotify(msg, `${info} · ${cityName(city())}`); if (!ringing) playChime(false);
+    });
+    if (S.alarm) run('az', azan, azan.getTime() + 5 * M, () => {
+      startAlarm(`${name} · ${pAlt(d, p)}`, t('alarmNow'), `${t('azanShort')} ${to12(azanS)} · ${t('jamaat')} ${jam}`, p.k === 'Fajr');
+      sysNotify(`🕌 ${t('alarmNow')}: ${name}`, `${t('azanShort')} ${to12(azanS)} · ${t('jamaat')} ${jam} · ${cityName(city())}`, true);
+    });
+  }
+}
+setInterval(checkAlerts, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkAlerts(); });
+
+/* ---------- Alert settings ---------- */
+function syncAlertUI() {
+  ['notify','rem10','rem3','alarm'].forEach(k => $('#' + k).checked = !!S[k]);
+  $('#sound').value = S.sound;
+  $('#alertBar').hidden = !city() || S.rem10 || S.rem3 || S.alarm || store.get('alertsAsked', false);
+}
+async function askNotify() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  try { return (await Notification.requestPermission()) === 'granted'; } catch { return false; }
+}
+$('#notify').onchange = async e => { S.notify = e.target.checked && await askNotify(); store.set('notify', S.notify); syncAlertUI(); };
+['rem10','rem3','alarm'].forEach(k => $('#' + k).onchange = e => { S[k] = e.target.checked; store.set(k, S[k]); unlockAudio(); syncAlertUI(); });
+$('#sound').onchange = e => { S.sound = e.target.value; store.set('sound', S.sound); fileUI(); };
+$('#azanFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { await fileSet(f); } catch {}
+  if (audioEl) { audioEl.pause(); audioEl = null; }
+  await prepareFile(); fileUI();
+};
+$('#testAlarm').onclick = () => { unlockAudio(); $('#setDlg').close(); startAlarm(t('testLabel'), t('alarmNow'), '', true); };
+$('#alertOn').onclick = async () => {
+  unlockAudio();
+  S.rem10 = S.rem3 = S.alarm = true; ['rem10','rem3','alarm'].forEach(k => store.set(k, true));
+  S.notify = await askNotify(); store.set('notify', S.notify);
+  store.set('alertsAsked', true); syncAlertUI(); checkAlerts();
+};
+$('#alertLater').onclick = () => { store.set('alertsAsked', true); syncAlertUI(); };
+syncAlertUI();
 
 /* ---------- Start ---------- */
 applyTheme(); applyLang(); load();

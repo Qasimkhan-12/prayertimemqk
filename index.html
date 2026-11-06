@@ -2,8 +2,18 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pakistan Namaz Timing</title>
+<meta name="description" content="Prayer times, jamaat and Jumu'ah timings for Pakistan with reminders and azan alarm.">
+<meta name="theme-color" content="#174f3a">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Namaz Timing">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&family=Source+Serif+4:wght@400;600;700&family=Inter:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
@@ -14,6 +24,7 @@
 <header class="top">
   <div class="brand"><span class="logo">☪</span><b data-i18n="app">Pakistan Namaz Timing</b></div>
   <div class="tools">
+    <button id="installBtn" class="pill install" type="button" hidden><span>⬇️</span><span data-i18n="install">Install app</span></button>
     <button id="cityBtn" class="pill"><span>📍</span><span id="cityName"></span></button>
     <select id="langSel" aria-label="Language"><option value="en">English</option><option value="ur">اردو</option></select>
     <button id="refBtn" class="icon" aria-label="Refresh">🔄</button>
@@ -52,6 +63,13 @@
   </section>
 
   <div id="status" class="status" hidden></div>
+
+  <!-- ALERTS PROMPT: shown until reminders/alarm are turned on -->
+  <section id="alertBar" class="alertbar" hidden>
+    <span>🔔</span><p data-i18n="alertAsk">Turn on prayer reminders and the azan alarm?</p>
+    <button id="alertOn" type="button" data-i18n="turnOn">Turn on</button>
+    <button id="alertLater" type="button" class="ghost" data-i18n="later">Later</button>
+  </section>
 
   <!-- NEXT PRAYER HERO -->
   <section class="hero">
@@ -121,9 +139,39 @@
     <p class="note" data-i18n="jumaNote"></p>
     <button id="jumaReset" class="wide" type="button" data-i18n="jumaReset">Reset to 1:00 / 1:30 PM</button>
   </fieldset>
-  <label class="check"><input type="checkbox" id="notify"><span data-i18n="notify">Notify me 10 minutes before each prayer</span></label>
+  <fieldset class="adjbox"><legend data-i18n="alertsTitle">Reminders &amp; azan alarm</legend>
+    <label class="check"><input type="checkbox" id="notify"><span data-i18n="notify">Show phone / computer notifications</span></label>
+    <label class="check"><input type="checkbox" id="rem10"><span data-i18n="rem10">Reminder 10 minutes before each prayer</span></label>
+    <label class="check"><input type="checkbox" id="rem3"><span data-i18n="rem3">Reminder 3 minutes before Jumu'ah</span></label>
+    <label class="check"><input type="checkbox" id="alarm"><span data-i18n="alarmOpt">Ring azan alarm at prayer time (keeps ringing until you stop it)</span></label>
+    <label><span data-i18n="sound">Alarm sound</span>
+      <select id="sound"><option value="chime" data-i18n="soundChime">Built-in chime</option><option value="file" data-i18n="soundFile">My azan audio file</option></select></label>
+    <label id="fileRow" hidden><span data-i18n="pickFile">Choose an azan audio file (mp3, m4a…)</span>
+      <input type="file" id="azanFile" accept="audio/*"><small id="fileName" class="note"></small></label>
+    <button id="testAlarm" class="wide" type="button" data-i18n="testAlarm">▶ Test alarm</button>
+    <p class="note" data-i18n="alertsNote"></p>
+  </fieldset>
+  <fieldset class="adjbox"><legend data-i18n="installTitle">Install on your device</legend>
+    <p class="note" id="installHelp"></p>
+    <button id="installBtn2" class="wide" type="button" data-i18n="install" hidden>Install app</button>
+  </fieldset>
   <p class="note" data-i18n="settingsNote"></p>
 </dialog>
+
+<!-- AZAN ALARM (rings until stopped) -->
+<div id="alarmView" class="alarm" role="alertdialog" aria-modal="true" aria-labelledby="alarmName" hidden>
+  <div class="alarm-in">
+    <div class="alarm-ic">🕌</div>
+    <p id="alarmLabel" class="alarm-label"></p>
+    <h2 id="alarmName"></h2>
+    <p id="alarmTime" class="alarm-time"></p>
+    <ol id="azanLines" class="azan"></ol>
+    <button id="stopAlarm" class="stop" type="button" data-i18n="stop">Stop alarm</button>
+  </div>
+</div>
+
+<!-- IN-APP REMINDER MESSAGES -->
+<div id="toasts" class="toasts" aria-live="assertive"></div>
 
 <div class="mqk" aria-label="MQK">MQK</div>
 
