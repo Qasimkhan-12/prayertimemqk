@@ -23,6 +23,17 @@
 </header>
 
 <main>
+  <!-- WELCOME: shown until the user selects a city -->
+  <section id="welcome" class="welcome" hidden>
+    <div class="wic">🕌</div>
+    <h2 data-i18n="welcomeTitle">Select your city</h2>
+    <p data-i18n="welcomeText">Choose your city to see today's prayer times.</p>
+    <div class="wbtns">
+      <button id="wLoc" class="primary" type="button" data-i18n="useLocation">Use my location</button>
+      <button id="wPick" class="secondary" type="button" data-i18n="chooseCity">Choose city</button>
+    </div>
+  </section>
+
   <!-- DATE BAR -->
   <section class="datebar">
     <button id="prev" class="icon" aria-label="Previous day">‹</button>
@@ -66,8 +77,6 @@
     <div class="scroll"><table id="table"></table></div>
   </section>
 
-  <p class="note" data-i18n="disclaimer"></p>
-  <p class="note" id="source"></p>
 </main>
 
 <!-- CITY DIALOG -->

@@ -144,3 +144,14 @@ td .tj,th .tj{display:block;font-size:.75rem;color:var(--mute);font-weight:400}
 
 /* MQK corner mark */
 .mqk{position:fixed;right:.8rem;bottom:.6rem;z-index:4;font-size:.75rem;font-weight:700;letter-spacing:.12em;color:var(--mute);opacity:.75;pointer-events:none;user-select:none}
+
+/* Welcome screen (no city selected yet) */
+.welcome{background:var(--hero);color:var(--hero-ink);border-radius:24px;padding:2.5rem 1.5rem;text-align:center;box-shadow:var(--shadow)}
+.welcome .wic{font-size:3rem;line-height:1;margin-bottom:.6rem}
+.welcome h2{font-size:clamp(1.6rem,5vw,2.4rem);margin-bottom:.4rem}
+.welcome p{opacity:.85;margin-bottom:1.4rem}
+.wbtns{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap}
+.wbtns button{padding:.75rem 1.4rem;border-radius:999px;font-weight:600;font-size:1rem;cursor:pointer;border:2px solid currentColor}
+.wbtns .primary{background:var(--gold,#e0b95a);color:#1b1b1b;border-color:transparent}
+.wbtns .secondary{background:transparent;color:inherit}
+body.no-city .datebar,body.no-city .hero,body.no-city .cards,body.no-city .panel,body.no-city #status{display:none!important}
