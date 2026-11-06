@@ -12,8 +12,13 @@ const S = {
   city: store.get('city', 'Lahore'), lang: store.get('lang', 'en'),
   theme: store.get('theme', 'light'), method: store.get('method', 1),
   school: store.get('school', 1), notify: store.get('notify', false),
-  adj: Object.assign({}, store.get('adj', null) || {})
+  adj: Object.assign({}, store.get('adj', null) || {}),
+  juma: Object.assign({}, store.get('juma', null) || {})
 };
+/* Jumu'ah (Friday) is set by each mosque, not by astronomy. Common Pakistani
+   timings: khutbah 1:00 PM, jamaat 1:30 PM. Users can match their own mosque. */
+const JUMA_DEFAULT = { khutbah:'13:00', jamaat:'13:30' };
+['khutbah','jamaat'].forEach(k => { if (!/^\d{2}:\d{2}$/.test(S.juma[k] || '')) S.juma[k] = JUMA_DEFAULT[k]; });
 /* Precautionary minutes (ihtiyat) used by Pakistani mosque timetables.
    Raw astronomy gives Dhuhr exactly at zawal and Maghrib exactly at sunset,
    which is why plain calculated times look a few minutes early in Pakistan. */
@@ -76,7 +81,10 @@ const T = {
     err:'Could not load prayer times. Check your internet connection.', cachedMsg:'You are offline: showing saved (cached) timings, which may be out of date.',
     selDate:'Selected date', isToday:'Today', viewing:'Viewing another date', backToday:'Go to today for the live countdown.',
     none:'No city found. Try another spelling or province.', all:'All', date:'Date', source:'Data: AlAdhan Prayer Times API', live:'live',
-    cached:'cached', locFail:'Could not get your location. Please choose a city manually.', prayers:{Fajr:'Fajr',Dhuhr:'Dhuhr',Asr:'Asr',Maghrib:'Maghrib',Isha:'Isha'} },
+    cached:'cached', locFail:'Could not get your location. Please choose a city manually.', prayers:{Fajr:'Fajr',Dhuhr:'Dhuhr',Asr:'Asr',Maghrib:'Maghrib',Isha:'Isha'},
+    juma:'Jumu\'ah', jumaTitle:'Jumu\'ah (Friday prayer)', jumaToday:'Today is Friday', jumaNext:'Next Friday', azan:'Azan / Dhuhr starts', khutbah:'Khutbah', jamaat:'Jamaat',
+    jumaSet:'Jumu\'ah timings (your mosque)', jumaNote:'Dhuhr start comes from the API. Khutbah and jamaat are set by each mosque, so enter your mosque\'s times.', jumaReset:'Reset to 1:00 / 1:30 PM',
+    jumaEarly:'The jamaat time you set is before Dhuhr starts, so the Dhuhr start time is used.', jumaIn:n => `in ${n} day${n === 1 ? '' : 's'}` },
   ur: { app:'پاکستان نماز اوقات', yesterday:'کل (گزشتہ)', today:'آج', tomorrow:'کل (آئندہ)', weekly:'ہفتہ وار', monthly:'ماہانہ',
     chooseCity:'شہر منتخب کریں', search:'شہر تلاش کریں', useLocation:'میری لوکیشن استعمال کریں', settings:'ترتیبات', adjTitle:'اوقات میں تبدیلی (منٹ)', adjNote:'اس میں پاکستان میں رائج احتیاطی منٹ شامل ہیں۔ اپنی مقامی مسجد کے مطابق کوئی بھی قدر تبدیل کریں۔', min:'منٹ', reset:'پاکستانی ڈیفالٹ بحال کریں',
     method:'حساب کا طریقہ', asr:'عصر کا حساب', hanafi:'حنفی', shafi:'شافعی', notify:'ہر نماز سے 10 منٹ پہلے یاد دہانی',
@@ -86,7 +94,10 @@ const T = {
     err:'نماز کے اوقات لوڈ نہیں ہو سکے۔ انٹرنیٹ چیک کریں۔', cachedMsg:'آپ آف لائن ہیں: محفوظ شدہ (کیشڈ) اوقات دکھائے جا رہے ہیں جو پرانے ہو سکتے ہیں۔',
     selDate:'منتخب تاریخ', isToday:'آج', viewing:'دوسری تاریخ دیکھی جا رہی ہے', backToday:'براہِ راست کاؤنٹ ڈاؤن کے لیے آج پر جائیں۔',
     none:'کوئی شہر نہیں ملا۔ کوئی اور املا یا صوبہ آزمائیں۔', all:'سب', date:'تاریخ', source:'ماخذ: AlAdhan پرئیر ٹائمز API', live:'براہِ راست',
-    cached:'کیشڈ', locFail:'لوکیشن نہیں مل سکی۔ براہِ کرم شہر خود منتخب کریں۔', prayers:{Fajr:'فجر',Dhuhr:'ظہر',Asr:'عصر',Maghrib:'مغرب',Isha:'عشاء'} }
+    cached:'کیشڈ', locFail:'لوکیشن نہیں مل سکی۔ براہِ کرم شہر خود منتخب کریں۔', prayers:{Fajr:'فجر',Dhuhr:'ظہر',Asr:'عصر',Maghrib:'مغرب',Isha:'عشاء'},
+    juma:'جمعہ', jumaTitle:'نمازِ جمعہ', jumaToday:'آج جمعہ ہے', jumaNext:'اگلا جمعہ', azan:'اذان / ظہر کا آغاز', khutbah:'خطبہ', jamaat:'جماعت',
+    jumaSet:'جمعہ کے اوقات (آپ کی مسجد)', jumaNote:'ظہر کا آغاز API سے آتا ہے۔ خطبہ اور جماعت کا وقت ہر مسجد خود طے کرتی ہے، اس لیے اپنی مسجد کے اوقات درج کریں۔', jumaReset:'1:00 / 1:30 بجے پر بحال کریں',
+    jumaEarly:'آپ کا مقرر کردہ جماعت کا وقت ظہر کے آغاز سے پہلے ہے، اس لیے ظہر کے آغاز کا وقت استعمال کیا گیا ہے۔', jumaIn:n => `${n} دن میں` }
 };
 const t = k => T[S.lang][k];
 
@@ -100,6 +111,15 @@ const locale = () => S.lang === 'ur' ? 'ur-PK' : 'en-GB';
 const clean = s => s.slice(0, 5);                        // "05:12 (PKT)" -> "05:12"
 const to12 = s => { const [h, m] = s.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h < 12 ? 'AM' : 'PM'}`; };
 const atTime = (day, s) => { const [h, m] = s.split(':').map(Number); return new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m); };
+
+const isFri = d => d.getDay() === 5;
+const mins = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+/* Jamaat time for a Friday; never earlier than the day's Dhuhr start. */
+const jumaJamaat = e => { const z = clean(e.timings.Dhuhr); return mins(S.juma.jamaat) >= mins(z) ? S.juma.jamaat : z; };
+/* The time shown/used for a prayer on a given day (Dhuhr becomes Jumu'ah on Fridays). */
+const pTime = (d, e, k) => (k === 'Dhuhr' && isFri(d)) ? jumaJamaat(e) : clean(e.timings[k]);
+const pName = (d, k) => (k === 'Dhuhr' && isFri(d)) ? t('juma') : t('prayers')[k];
+const pAlt = (d, p) => (p.k === 'Dhuhr' && isFri(d)) ? (S.lang === 'ur' ? "Jumu'ah" : 'جمعہ') : (S.lang === 'ur' ? p.k : p.ur);
 
 let selected = dayStart(pkNow());
 let current = null, tomorrowFajr = null, notified = '';
@@ -155,7 +175,7 @@ async function load() {
     }
     status(cached ? t('cachedMsg') : '', 'info');
     $('#source').textContent = `${t('source')} · ${S.city} · ${cached ? t('cached') : t('live')}`;
-    render(); tick(); buildTable();
+    render(); tick(); buildTable(); buildJuma();
   } catch (e) {
     current = null; $('#cards').innerHTML = '';
     status(t('err'), '', true);
@@ -173,10 +193,15 @@ function render() {
   tag.textContent = today ? t('isToday') : t('selDate');
   tag.className = 'tag' + (today ? '' : ' other');
   $('#sun').textContent = `🌅 ${t('sunrise')} (طلوع آفتاب): ${to12(clean(tm.Sunrise))}`;
-  $('#cards').innerHTML = PRAYERS.map(p => `
-    <article class="card" data-p="${p.k}"><div class="ic">${p.ic}</div>
-      <h3>${t('prayers')[p.k]}</h3><small>${S.lang === 'ur' ? p.k : p.ur}</small>
-      <div class="t">${to12(clean(tm[p.k]))}</div></article>`).join('');
+  const fri = isFri(selected);
+  $('#cards').innerHTML = PRAYERS.map(p => {
+    const juma = fri && p.k === 'Dhuhr';
+    return `
+    <article class="card${juma ? ' juma' : ''}" data-p="${p.k}"><div class="ic">${juma ? '🕌' : p.ic}</div>
+      <h3>${pName(selected, p.k)}</h3><small>${pAlt(selected, p)}</small>
+      <div class="t">${to12(pTime(selected, current, p.k))}</div>
+      ${juma ? `<small class="sub">${t('jamaat')} · ${t('khutbah')} ${to12(S.juma.khutbah)} · ${t('azan').split(' /')[0]} ${to12(clean(tm.Dhuhr))}</small>` : ''}</article>`;
+  }).join('');
   $('#datePick').value = iso(selected);
 }
 
@@ -191,20 +216,21 @@ function tick() {
     document.querySelectorAll('.card').forEach(c => c.classList.remove('next'));
     return;
   }
-  let next = PRAYERS.find(p => atTime(selected, clean(current.timings[p.k])) > now), when, tomorrow = false;
-  if (next) when = atTime(selected, clean(current.timings[next.k]));
+  let next = PRAYERS.find(p => atTime(selected, pTime(selected, current, p.k)) > now), when, tomorrow = false;
+  if (next) when = atTime(selected, pTime(selected, current, next.k));
   else if (tomorrowFajr) { next = PRAYERS[0]; when = atTime(addDays(selected, 1), tomorrowFajr); tomorrow = true; }
   else return;
   const sec = Math.max(0, Math.floor((when - now) / 1000));
   const f = n => String(n).padStart(2, '0');
   $('#heroLabel').textContent = tomorrow ? t('nextTomorrow') : t('next');
-  $('#heroName').textContent = `${t('prayers')[next.k]} · ${S.lang === 'ur' ? next.k : next.ur}`;
+  const nd = tomorrow ? addDays(selected, 1) : selected;
+  $('#heroName').textContent = `${pName(nd, next.k)} · ${pAlt(nd, next)}`;
   $('#count').textContent = `${f(Math.floor(sec / 3600))}:${f(Math.floor(sec % 3600 / 60))}:${f(sec % 60)}`;
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('next', !tomorrow && c.dataset.p === next.k));
   // Optional notification, only if the user enabled it and allowed permission
   if (S.notify && 'Notification' in window && Notification.permission === 'granted' && sec <= 600 && notified !== next.k + iso(when)) {
     notified = next.k + iso(when);
-    new Notification(`${t('prayers')[next.k]} – ${to12(when.toTimeString().slice(0,5))}`, { body: S.city });
+    new Notification(`${pName(nd, next.k)} – ${to12(when.toTimeString().slice(0,5))}`, { body: S.city });
   }
 }
 setInterval(tick, 1000);
@@ -223,8 +249,33 @@ async function buildTable() {
   } catch { $('#table').innerHTML = ''; return; }
   const head = `<tr><th>${t('date')}</th>${PRAYERS.map(p => `<th>${t('prayers')[p.k]}</th>`).join('')}</tr>`;
   $('#table').innerHTML = head + days.map(({ d, e }) => `
-    <tr class="${sameDay(d, selected) ? 'sel' : ''}"><td>${d.toLocaleDateString(locale(), { weekday:'short', day:'numeric', month:'short' })}</td>
-    ${PRAYERS.map(p => `<td>${to12(clean(e.timings[p.k]))}</td>`).join('')}</tr>`).join('');
+    <tr class="${sameDay(d, selected) ? 'sel' : ''}${isFri(d) ? ' fri' : ''}"><td>${d.toLocaleDateString(locale(), { weekday:'short', day:'numeric', month:'short' })}</td>
+    ${PRAYERS.map(p => (p.k === 'Dhuhr' && isFri(d))
+      ? `<td title="${t('juma')} – ${t('jamaat')}">🕌 ${to12(pTime(d, e, p.k))}</td>`
+      : `<td>${to12(clean(e.timings[p.k]))}</td>`).join('')}</tr>`).join('');
+}
+
+/* ---------- Jumu'ah panel: this or the next Friday ---------- */
+async function buildJuma() {
+  const el = $('#juma');
+  const base = sameDay(selected, dayStart(pkNow())) ? dayStart(pkNow()) : selected;
+  const fri = addDays(base, (5 - base.getDay() + 7) % 7);
+  let e;
+  try { e = (await getDay(fri)).entry; } catch { el.hidden = true; return; }
+  const zuhr = clean(e.timings.Dhuhr), jam = jumaJamaat(e);
+  const gap = Math.round((fri - base) / 864e5);
+  const label = gap === 0 ? t('jumaToday') : `${t('jumaNext')} · ${t('jumaIn')(gap)}`;
+  el.hidden = false;
+  el.innerHTML = `
+    <div class="jhead"><span class="jic">🕌</span><div><h3>${t('jumaTitle')}</h3>
+      <p>${fri.toLocaleDateString(locale(), { weekday:'long', day:'numeric', month:'long' })} · ${e.date.hijri.day} ${S.lang === 'ur' ? e.date.hijri.month.ar : e.date.hijri.month.en}</p></div>
+      <span class="tag${gap === 0 ? '' : ' other'}">${label}</span></div>
+    <div class="jrow">
+      <div><small>${t('azan')}</small><b>${to12(zuhr)}</b></div>
+      <div><small>${t('khutbah')}</small><b>${to12(S.juma.khutbah)}</b></div>
+      <div class="main"><small>${t('jamaat')}</small><b>${to12(jam)}</b></div>
+    </div>
+    ${jam !== S.juma.jamaat ? `<p class="note">${t('jumaEarly')}</p>` : ''}`;
 }
 
 /* ---------- City picker ---------- */
@@ -283,7 +334,7 @@ function applyLang() {
   $('#langSel').value = S.lang;
   $('#cityName').textContent = cityName(city());
   document.title = t('app');
-  render(); tick(); buildTable(); renderCities(); renderAdj();
+  render(); tick(); buildTable(); buildJuma(); renderCities(); renderAdj();
 }
 $('#langSel').onchange = e => { S.lang = e.target.value; store.set('lang', S.lang); applyLang(); };
 
@@ -301,6 +352,14 @@ $('#adj').onchange = e => {
   e.target.value = v; S.adj[k] = v; store.set('adj', S.adj); load();
 };
 $('#adjReset').onclick = () => { S.adj = { ...IHTIYAT }; store.set('adj', S.adj); renderAdj(); load(); };
+function syncJuma() { $('#jKhutbah').value = S.juma.khutbah; $('#jJamaat').value = S.juma.jamaat; }
+function saveJuma() { store.set('juma', S.juma); syncJuma(); render(); tick(); buildTable(); buildJuma(); }
+['khutbah','jamaat'].forEach(k => {
+  const id = k === 'khutbah' ? '#jKhutbah' : '#jJamaat';
+  $(id).onchange = e => { if (/^\d{2}:\d{2}$/.test(e.target.value)) { S.juma[k] = e.target.value; saveJuma(); } else syncJuma(); };
+});
+$('#jumaReset').onclick = () => { S.juma = { ...JUMA_DEFAULT }; saveJuma(); };
+syncJuma();
 $('#notify').onchange = async e => {
   let on = e.target.checked;
   if (on && 'Notification' in window) on = (await Notification.requestPermission()) === 'granted';

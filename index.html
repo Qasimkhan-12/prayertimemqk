@@ -53,6 +53,9 @@
   <!-- FIVE PRAYERS -->
   <section id="cards" class="cards"></section>
 
+  <!-- JUMU'AH (FRIDAY) -->
+  <section id="juma" class="panel juma-panel" hidden></section>
+
   <!-- TIMETABLE -->
   <section class="panel">
     <div class="tabs">
@@ -93,6 +96,14 @@
     <div id="adj"></div>
     <p class="note" data-i18n="adjNote"></p>
     <button id="adjReset" class="wide" type="button" data-i18n="reset">Reset to Pakistan default</button>
+  </fieldset>
+  <fieldset class="adjbox"><legend data-i18n="jumaSet">Jumu'ah timings (your mosque)</legend>
+    <div class="jset">
+      <label><span data-i18n="khutbah">Khutbah</span><input type="time" id="jKhutbah"></label>
+      <label><span data-i18n="jamaat">Jamaat</span><input type="time" id="jJamaat"></label>
+    </div>
+    <p class="note" data-i18n="jumaNote"></p>
+    <button id="jumaReset" class="wide" type="button" data-i18n="jumaReset">Reset to 1:00 / 1:30 PM</button>
   </fieldset>
   <label class="check"><input type="checkbox" id="notify"><span data-i18n="notify">Notify me 10 minutes before each prayer</span></label>
   <p class="note" data-i18n="settingsNote"></p>

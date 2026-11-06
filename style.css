@@ -105,3 +105,24 @@ dialog select{border-radius:10px}
 label.adj{display:flex;align-items:center;gap:.4rem;margin:0}
 label.adj span{flex:1}
 label.adj input{width:4.2rem;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:.25rem .4rem;text-align:center}
+
+/* ===== Jumu'ah ===== */
+.card.juma{background:linear-gradient(180deg,var(--green-soft),var(--card))}
+.card .sub{margin-top:.3rem;font-size:.78rem}
+.juma-panel{display:grid;gap:.9rem}
+.jhead{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.jhead>div{flex:1;min-width:10rem}
+.jhead p{color:var(--mute);font-size:.9rem}
+.jic{display:grid;place-items:center;width:2.6rem;height:2.6rem;border-radius:50%;background:var(--green-soft);font-size:1.4rem}
+.jrow{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
+.jrow>div{border:1px solid var(--line);border-radius:14px;padding:.7rem;text-align:center;display:grid;gap:.15rem}
+.jrow small{color:var(--mute)}
+.jrow b{font-size:1.25rem;font-variant-numeric:tabular-nums}
+.jrow .main{border:2px solid var(--gold)}
+.jrow .main b{color:var(--gold)}
+tr.fri td{background:color-mix(in srgb,var(--gold) 8%,transparent)}
+tr.fri.sel td{background:var(--green-soft)}
+.jset{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem}
+.jset label{margin:0}
+.jset input{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:.3rem .5rem;color-scheme:light dark}
+@media (max-width:480px){.jrow{grid-template-columns:1fr}}
