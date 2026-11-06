@@ -155,3 +155,6 @@ td .tj,th .tj{display:block;font-size:.75rem;color:var(--mute);font-weight:400}
 .wbtns .primary{background:var(--gold,#e0b95a);color:#1b1b1b;border-color:transparent}
 .wbtns .secondary{background:transparent;color:inherit}
 body.no-city .datebar,body.no-city .hero,body.no-city .cards,body.no-city .panel,body.no-city #status{display:none!important}
+.quick button.on{background:var(--green);border-color:var(--green);color:#fff}
+.backtoday{margin-top:.8rem;background:var(--gold);color:#1b1b1b;border:0;border-radius:999px;padding:.45rem 1.2rem;font-weight:600;cursor:pointer}
+.backtoday[hidden]{display:none}

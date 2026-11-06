@@ -86,7 +86,9 @@ const T = {
     settingsNote:'Karachi (University of Islamic Sciences) with Hanafi Asr is the usual choice in Pakistan.',
     next:'Next prayer', nextTomorrow:'Next prayer (tomorrow)', sunrise:'Sunrise', loading:'Loading prayer times…', retry:'Retry',
     err:'Could not load prayer times. Check your internet connection.', cachedMsg:'You are offline: showing saved (cached) timings, which may be out of date.',
-    selDate:'Selected date', isToday:'Today', viewing:'Viewing another date', backToday:'Go to today for the live countdown.',
+    selDate:'Selected date', isToday:'Today', viewing:'Viewing another date', backToday:'Back to today',
+    pastDate:'Past date', futureDate:'Upcoming date', firstPrayer:'First prayer of this day', pastNote:'These prayer times have passed.',
+    daysLeft:n => `${n} day${n === 1 ? '' : 's'}`,
     none:'No city found. Try another spelling or province.', all:'All', date:'Date',
     cached:'cached', locFail:'Could not get your location. Please choose a city manually.', prayers:{Fajr:'Fajr',Dhuhr:'Dhuhr',Asr:'Asr',Maghrib:'Maghrib',Isha:'Isha'},
     juma:'Jumu\'ah', jumaTitle:'Jumu\'ah (Friday prayer)', jumaToday:'Today is Friday', jumaNext:'Next Friday', azan:'Azan / Dhuhr starts', khutbah:'Khutbah', jamaat:'Jamaat',
@@ -101,7 +103,9 @@ const T = {
     settingsNote:'پاکستان میں عموماً جامعہ علوم اسلامیہ کراچی اور حنفی عصر استعمال ہوتا ہے۔',
     next:'اگلی نماز', nextTomorrow:'اگلی نماز (کل)', sunrise:'طلوع آفتاب', loading:'نماز کے اوقات لوڈ ہو رہے ہیں…', retry:'دوبارہ کوشش کریں',
     err:'نماز کے اوقات لوڈ نہیں ہو سکے۔ انٹرنیٹ چیک کریں۔', cachedMsg:'آپ آف لائن ہیں: محفوظ شدہ (کیشڈ) اوقات دکھائے جا رہے ہیں جو پرانے ہو سکتے ہیں۔',
-    selDate:'منتخب تاریخ', isToday:'آج', viewing:'دوسری تاریخ دیکھی جا رہی ہے', backToday:'براہِ راست کاؤنٹ ڈاؤن کے لیے آج پر جائیں۔',
+    selDate:'منتخب تاریخ', isToday:'آج', viewing:'دوسری تاریخ دیکھی جا رہی ہے', backToday:'آج پر واپس جائیں',
+    pastDate:'گزشتہ تاریخ', futureDate:'آنے والی تاریخ', firstPrayer:'اس دن کی پہلی نماز', pastNote:'ان نمازوں کا وقت گزر چکا ہے۔',
+    daysLeft:n => `${n} دن`,
     none:'کوئی شہر نہیں ملا۔ کوئی اور املا یا صوبہ آزمائیں۔', all:'سب', date:'تاریخ',
     cached:'کیشڈ', locFail:'لوکیشن نہیں مل سکی۔ براہِ کرم شہر خود منتخب کریں۔', prayers:{Fajr:'فجر',Dhuhr:'ظہر',Asr:'عصر',Maghrib:'مغرب',Isha:'عشاء'},
     juma:'جمعہ', jumaTitle:'نمازِ جمعہ', jumaToday:'آج جمعہ ہے', jumaNext:'اگلا جمعہ', azan:'اذان / ظہر کا آغاز', khutbah:'خطبہ', jamaat:'جماعت',
@@ -145,6 +149,9 @@ const pName = (d, k) => (k === 'Dhuhr' && isFri(d)) ? t('juma') : t('prayers')[k
 const pAlt = (d, p) => (p.k === 'Dhuhr' && isFri(d)) ? (S.lang === 'ur' ? "Jumu'ah" : 'جمعہ') : (S.lang === 'ur' ? p.k : p.ur);
 
 let selected = dayStart(pkNow());
+let today0 = dayStart(pkNow());                          // used to follow midnight rollover
+const dayDiff = d => Math.round((dayStart(d) - dayStart(pkNow())) / 864e5);   // -1 yesterday, 0 today, 1 tomorrow
+let loadId = 0;
 let current = null, tomorrowFajr = null, nextFajr = null, notified = '';
 
 /* ---------- Fetching prayer times (AlAdhan monthly calendar) ----------
@@ -192,17 +199,21 @@ async function load() {
   document.body.classList.toggle('no-city', !has);
   $('#welcome').hidden = has;
   if (!has) { current = null; status(''); return; }
+  const id = ++loadId, day = selected;                    // ignore results of older, slower requests
+  markQuick();
   status(t('loading'), 'info');
   try {
-    const { entry, cached } = await getDay(selected);
-    current = entry;
-    tomorrowFajr = nextFajr = null;
+    const { entry, cached } = await getDay(day);
     // next day's Fajr: end of Isha time, and the countdown target after Isha
-    try { nextFajr = clean((await getDay(addDays(selected, 1))).entry.timings.Fajr); } catch {}
-    if (sameDay(selected, dayStart(pkNow()))) tomorrowFajr = nextFajr;
+    let nf = null;
+    try { nf = clean((await getDay(addDays(day, 1))).entry.timings.Fajr); } catch {}
+    if (id !== loadId) return;
+    current = entry; nextFajr = nf;
+    tomorrowFajr = sameDay(day, dayStart(pkNow())) ? nf : null;
     status(cached ? t('cachedMsg') : '', 'info');
     render(); tick(); buildTable(); buildJuma();
   } catch (e) {
+    if (id !== loadId) return;
     current = null; $('#cards').innerHTML = '';
     status(t('err'), '', true);
   }
@@ -215,8 +226,8 @@ function render() {
   $('#greg').textContent = selected.toLocaleDateString(locale(), { weekday:'long', day:'numeric', month:'long', year:'numeric' });
   $('#hijri').textContent = S.lang === 'ur'
     ? `${h.weekday.ar} ${h.day} ${h.month.ar} ${h.year} ھ` : `${h.day} ${h.month.en} ${h.year} AH`;
-  const tag = $('#dayTag');
-  tag.textContent = today ? t('isToday') : t('selDate');
+  const tag = $('#dayTag'), dd = dayDiff(selected);
+  tag.textContent = today ? t('isToday') : dd === -1 ? t('yesterday') : dd === 1 ? t('tomorrow') : dd < 0 ? t('pastDate') : t('futureDate');
   tag.className = 'tag' + (today ? '' : ' other');
   $('#sun').textContent = `🌅 ${t('sunrise')} (طلوع آفتاب): ${to12(clean(tm.Sunrise))}`;
   const fri = isFri(selected);
@@ -237,11 +248,32 @@ function render() {
 function tick() {
   if (!current) return;
   const now = pkNow();
+  // Midnight passed while the app was open on "today": move on to the new day automatically
+  if (!sameDay(today0, dayStart(now))) {
+    const wasToday = sameDay(selected, today0);
+    today0 = dayStart(now);
+    if (wasToday) { selected = today0; load(); return; }
+    markQuick(); render(); buildJuma();
+  }
+  const f = n => String(n).padStart(2, '0');
+  const hms = s => `${f(Math.floor(s / 3600))}:${f(Math.floor(s % 3600 / 60))}:${f(s % 60)}`;
+  $('#backToday').hidden = sameDay(selected, dayStart(now));
   if (!sameDay(selected, dayStart(now))) {
-    $('#heroLabel').textContent = t('viewing');
-    $('#heroName').textContent = '—'; $('#count').textContent = '--:--:--'; $('#heroSub').textContent = '';
-    $('#sun').dataset.hint = t('backToday');
+    // Another date: show that day's first prayer (future) or a summary (past)
     document.querySelectorAll('.card').forEach(c => c.classList.remove('next'));
+    const dd = dayDiff(selected), dayLbl = dd === -1 ? t('yesterday') : dd === 1 ? t('tomorrow') : (dd < 0 ? t('pastDate') : t('futureDate'));
+    const fajr = PRAYERS[0];
+    $('#heroLabel').textContent = `${dayLbl} · ${t('firstPrayer')}`;
+    $('#heroName').textContent = `${pName(selected, fajr.k)} · ${pAlt(selected, fajr)}`;
+    $('#heroSub').textContent = `${t('azanShort')} ${to12(clean(current.timings.Fajr))} · ${t('jamaat')} ${to12(jamTime(selected, current, fajr.k))}`;
+    if (dd > 0) {
+      const sec = Math.max(0, Math.floor((atTime(selected, clean(current.timings.Fajr)) - now) / 1000));
+      const d = Math.floor(sec / 86400);
+      $('#count').textContent = (d >= 1 ? `${t('daysLeft')(d)} ` : '') + hms(sec % 86400);
+    } else {
+      $('#count').textContent = '✓';
+      $('#heroSub').textContent += ` — ${t('pastNote')}`;
+    }
     return;
   }
   let next = PRAYERS.find(p => atTime(selected, pTime(selected, current, p.k)) > now), when, tomorrow = false;
@@ -249,13 +281,12 @@ function tick() {
   else if (tomorrowFajr) { next = PRAYERS[0]; when = atTime(addDays(selected, 1), tomorrowFajr); tomorrow = true; }
   else return;
   const sec = Math.max(0, Math.floor((when - now) / 1000));
-  const f = n => String(n).padStart(2, '0');
   $('#heroLabel').textContent = tomorrow ? t('nextTomorrow') : t('next');
   const nd = tomorrow ? addDays(selected, 1) : selected;
   $('#heroName').textContent = `${pName(nd, next.k)} · ${pAlt(nd, next)}`;
   if (!tomorrow) $('#heroSub').textContent = `${t('azanShort')} ${to12(clean(current.timings[next.k]))} · ${t('jamaat')} ${to12(jamTime(nd, current, next.k))}`;
   else $('#heroSub').textContent = `${t('azanShort')} ${to12(tomorrowFajr)}`;
-  $('#count').textContent = `${f(Math.floor(sec / 3600))}:${f(Math.floor(sec % 3600 / 60))}:${f(sec % 60)}`;
+  $('#count').textContent = hms(sec);
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('next', !tomorrow && c.dataset.p === next.k));
   // Optional notification, only if the user enabled it and allowed permission
   if (S.notify && 'Notification' in window && Notification.permission === 'granted' && sec <= 600 && notified !== next.k + iso(when)) {
@@ -267,8 +298,9 @@ setInterval(tick, 1000);
 
 /* ---------- Weekly / monthly table ---------- */
 let tab = 'week';
+let tableId = 0;
 async function buildTable() {
-  const days = [];
+  const id = ++tableId, days = [];
   try {
     if (tab === 'week') {
       for (let i = 0; i < 7; i++) { const d = addDays(selected, i); days.push({ d, e: (await getDay(d)).entry }); }
@@ -276,7 +308,8 @@ async function buildTable() {
       const m = (await getMonth(selected.getFullYear(), selected.getMonth() + 1)).data;
       m.forEach((e, i) => days.push({ d: new Date(selected.getFullYear(), selected.getMonth(), i + 1), e }));
     }
-  } catch { $('#table').innerHTML = ''; return; }
+  } catch { if (id === tableId) $('#table').innerHTML = ''; return; }
+  if (id !== tableId) return;
   const head = `<tr><th>${t('date')}</th>${PRAYERS.map(p => `<th>${t('prayers')[p.k]}<small class="tj">${t('azanShort')} / ${t('jamaat')}</small></th>`).join('')}</tr>`;
   $('#table').innerHTML = head + days.map(({ d, e }) => `
     <tr class="${sameDay(d, selected) ? 'sel' : ''}${isFri(d) ? ' fri' : ''}"><td>${d.toLocaleDateString(locale(), { weekday:'short', day:'numeric', month:'short' })}</td>
@@ -284,12 +317,14 @@ async function buildTable() {
 }
 
 /* ---------- Jumu'ah panel: this or the next Friday ---------- */
+let jumaId = 0;
 async function buildJuma() {
-  const el = $('#juma');
+  const el = $('#juma'), id = ++jumaId;
   const base = sameDay(selected, dayStart(pkNow())) ? dayStart(pkNow()) : selected;
   const fri = addDays(base, (5 - base.getDay() + 7) % 7);
   let e;
-  try { e = (await getDay(fri)).entry; } catch { el.hidden = true; return; }
+  try { e = (await getDay(fri)).entry; } catch { if (id === jumaId) el.hidden = true; return; }
+  if (id !== jumaId) return;
   const zuhr = clean(e.timings.Dhuhr), jam = jumaJamaat(e);
   const gap = Math.round((fri - base) / 864e5);
   const label = gap === 0 ? t('jumaToday') : `${t('jumaNext')} · ${t('jumaIn')(gap)}`;
@@ -345,6 +380,12 @@ const go = d => { selected = dayStart(d); load(); };
 $('#prev').onclick = () => go(addDays(selected, -1));
 $('#next').onclick = () => go(addDays(selected, 1));
 document.querySelectorAll('.quick [data-d]').forEach(b => b.onclick = () => go(addDays(pkNow(), +b.dataset.d)));
+$('#backToday').onclick = () => go(pkNow());
+/* Highlight Yesterday / Today / Tomorrow when that day is shown */
+function markQuick() {
+  const dd = dayDiff(selected);
+  document.querySelectorAll('.quick [data-d]').forEach(b => b.classList.toggle('on', +b.dataset.d === dd));
+}
 $('#datePick').onchange = e => { if (e.target.value) { const [y, m, d] = e.target.value.split('-').map(Number); go(new Date(y, m - 1, d)); } };
 document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {
   tab = b.dataset.tab;
