@@ -126,3 +126,18 @@ tr.fri.sel td{background:var(--green-soft)}
 .jset label{margin:0}
 .jset input{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:.3rem .5rem;color-scheme:light dark}
 @media (max-width:480px){.jrow{grid-template-columns:1fr}}
+
+/* ===== Azan / jamaat rows ===== */
+.hsub{opacity:.85;font-variant-numeric:tabular-nums}
+.card .trow{display:flex;justify-content:space-between;align-items:baseline;gap:.4rem;margin-top:.35rem;font-size:.85rem;color:var(--mute)}
+.card .trow b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.card .trow.jam{border-top:1px dashed var(--line);padding-top:.35rem}
+.card .trow.jam b.t{font-size:1.2rem;margin:0;color:var(--green)}
+.card.next .trow.jam b.t{color:var(--gold)}
+.card .ends{margin-top:.35rem;font-size:.75rem}
+td .tj,th .tj{display:block;font-size:.75rem;color:var(--mute);font-weight:400}
+#jamSet{display:grid;gap:.5rem}
+.jamrow{display:grid;grid-template-columns:4.5rem 1fr 1fr;gap:.5rem;align-items:center}
+.jamrow label{margin:0;display:grid;gap:.1rem}
+.jamrow small{color:var(--mute);font-size:.72rem}
+.jamrow input{width:100%;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:.25rem .4rem;color-scheme:light dark}

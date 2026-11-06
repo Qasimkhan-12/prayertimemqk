@@ -13,8 +13,16 @@ const S = {
   theme: store.get('theme', 'light'), method: store.get('method', 1),
   school: store.get('school', 1), notify: store.get('notify', false),
   adj: Object.assign({}, store.get('adj', null) || {}),
-  juma: Object.assign({}, store.get('juma', null) || {})
+  juma: Object.assign({}, store.get('juma', null) || {}),
+  jam: Object.assign({}, store.get('jam', null) || {})
 };
+/* Daily jamaat (congregation) times. Each mosque sets its own, usually a fixed
+   number of minutes after the azan. A fixed clock time can be entered instead. */
+const JAM_DEFAULT = { Fajr:30, Dhuhr:30, Asr:20, Maghrib:5, Isha:30 };
+Object.keys(JAM_DEFAULT).forEach(k => {
+  const v = S.jam[k] || {};
+  S.jam[k] = { after: Number.isFinite(v.after) ? v.after : JAM_DEFAULT[k], fixed: /^\d{2}:\d{2}$/.test(v.fixed || '') ? v.fixed : '' };
+});
 /* Jumu'ah (Friday) is set by each mosque, not by astronomy. Common Pakistani
    timings: khutbah 1:00 PM, jamaat 1:30 PM. Users can match their own mosque. */
 const JUMA_DEFAULT = { khutbah:'13:00', jamaat:'13:30' };
@@ -84,7 +92,10 @@ const T = {
     cached:'cached', locFail:'Could not get your location. Please choose a city manually.', prayers:{Fajr:'Fajr',Dhuhr:'Dhuhr',Asr:'Asr',Maghrib:'Maghrib',Isha:'Isha'},
     juma:'Jumu\'ah', jumaTitle:'Jumu\'ah (Friday prayer)', jumaToday:'Today is Friday', jumaNext:'Next Friday', azan:'Azan / Dhuhr starts', khutbah:'Khutbah', jamaat:'Jamaat',
     jumaSet:'Jumu\'ah timings (your mosque)', jumaNote:'Dhuhr start comes from the API. Khutbah and jamaat are set by each mosque, so enter your mosque\'s times.', jumaReset:'Reset to 1:00 / 1:30 PM',
-    jumaEarly:'The jamaat time you set is before Dhuhr starts, so the Dhuhr start time is used.', jumaIn:n => `in ${n} day${n === 1 ? '' : 's'}` },
+    jumaEarly:'The jamaat time you set is before Dhuhr starts, so the Dhuhr start time is used.', jumaIn:n => `in ${n} day${n === 1 ? '' : 's'}`,
+    azanShort:'Azan', ends:'Ends', jamSet:'Jamaat timings (your mosque)', jamAfter:'min after azan', jamFixed:'or fixed time',
+    jamNote:'Azan times come from the API. Jamaat is set by each mosque: enter minutes after azan, or a fixed time (a fixed time earlier than azan is ignored).',
+    jamReset:'Reset jamaat defaults', jamCol:'J' },
   ur: { app:'پاکستان نماز اوقات', yesterday:'کل (گزشتہ)', today:'آج', tomorrow:'کل (آئندہ)', weekly:'ہفتہ وار', monthly:'ماہانہ',
     chooseCity:'شہر منتخب کریں', search:'شہر تلاش کریں', useLocation:'میری لوکیشن استعمال کریں', settings:'ترتیبات', adjTitle:'اوقات میں تبدیلی (منٹ)', adjNote:'اس میں پاکستان میں رائج احتیاطی منٹ شامل ہیں۔ اپنی مقامی مسجد کے مطابق کوئی بھی قدر تبدیل کریں۔', min:'منٹ', reset:'پاکستانی ڈیفالٹ بحال کریں',
     method:'حساب کا طریقہ', asr:'عصر کا حساب', hanafi:'حنفی', shafi:'شافعی', notify:'ہر نماز سے 10 منٹ پہلے یاد دہانی',
@@ -97,7 +108,10 @@ const T = {
     cached:'کیشڈ', locFail:'لوکیشن نہیں مل سکی۔ براہِ کرم شہر خود منتخب کریں۔', prayers:{Fajr:'فجر',Dhuhr:'ظہر',Asr:'عصر',Maghrib:'مغرب',Isha:'عشاء'},
     juma:'جمعہ', jumaTitle:'نمازِ جمعہ', jumaToday:'آج جمعہ ہے', jumaNext:'اگلا جمعہ', azan:'اذان / ظہر کا آغاز', khutbah:'خطبہ', jamaat:'جماعت',
     jumaSet:'جمعہ کے اوقات (آپ کی مسجد)', jumaNote:'ظہر کا آغاز API سے آتا ہے۔ خطبہ اور جماعت کا وقت ہر مسجد خود طے کرتی ہے، اس لیے اپنی مسجد کے اوقات درج کریں۔', jumaReset:'1:00 / 1:30 بجے پر بحال کریں',
-    jumaEarly:'آپ کا مقرر کردہ جماعت کا وقت ظہر کے آغاز سے پہلے ہے، اس لیے ظہر کے آغاز کا وقت استعمال کیا گیا ہے۔', jumaIn:n => `${n} دن میں` }
+    jumaEarly:'آپ کا مقرر کردہ جماعت کا وقت ظہر کے آغاز سے پہلے ہے، اس لیے ظہر کے آغاز کا وقت استعمال کیا گیا ہے۔', jumaIn:n => `${n} دن میں`,
+    azanShort:'اذان', ends:'وقت ختم', jamSet:'جماعت کے اوقات (آپ کی مسجد)', jamAfter:'منٹ اذان کے بعد', jamFixed:'یا مقررہ وقت',
+    jamNote:'اذان کے اوقات API سے آتے ہیں۔ جماعت کا وقت ہر مسجد خود طے کرتی ہے: اذان کے بعد منٹ درج کریں یا مقررہ وقت (اذان سے پہلے کا مقررہ وقت نظر انداز ہو گا)۔',
+    jamReset:'جماعت کے ڈیفالٹ بحال کریں', jamCol:'ج' }
 };
 const t = k => T[S.lang][k];
 
@@ -118,11 +132,22 @@ const mins = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; 
 const jumaJamaat = e => { const z = clean(e.timings.Dhuhr); return mins(S.juma.jamaat) >= mins(z) ? S.juma.jamaat : z; };
 /* The time shown/used for a prayer on a given day (Dhuhr becomes Jumu'ah on Fridays). */
 const pTime = (d, e, k) => (k === 'Dhuhr' && isFri(d)) ? jumaJamaat(e) : clean(e.timings[k]);
+const hm = n => { n = ((n % 1440) + 1440) % 1440; return `${String(Math.floor(n / 60)).padStart(2,'0')}:${String(n % 60).padStart(2,'0')}`; };
+/* Jamaat time for any prayer on a given day (Jumu'ah jamaat on Fridays). */
+const jamTime = (d, e, k) => {
+  if (k === 'Dhuhr' && isFri(d)) return jumaJamaat(e);
+  const az = clean(e.timings[k]), j = S.jam[k];
+  if (j.fixed && mins(j.fixed) >= mins(az)) return j.fixed;
+  return hm(mins(az) + j.after);
+};
+/* When each prayer's time ends: Fajr→sunrise, Dhuhr→Asr, Asr→sunset, Maghrib→Isha, Isha→next Fajr. */
+const ENDS = { Fajr:'Sunrise', Dhuhr:'Asr', Asr:'Sunset', Maghrib:'Isha' };
+const endTime = (e, k, nextFajr) => k === 'Isha' ? nextFajr : clean(e.timings[ENDS[k]]);
 const pName = (d, k) => (k === 'Dhuhr' && isFri(d)) ? t('juma') : t('prayers')[k];
 const pAlt = (d, p) => (p.k === 'Dhuhr' && isFri(d)) ? (S.lang === 'ur' ? "Jumu'ah" : 'جمعہ') : (S.lang === 'ur' ? p.k : p.ur);
 
 let selected = dayStart(pkNow());
-let current = null, tomorrowFajr = null, notified = '';
+let current = null, tomorrowFajr = null, nextFajr = null, notified = '';
 
 /* ---------- Fetching prayer times (AlAdhan monthly calendar) ----------
    One request returns a whole month, so day changes inside a month need no new request. */
@@ -169,10 +194,10 @@ async function load() {
   try {
     const { entry, cached } = await getDay(selected);
     current = entry;
-    tomorrowFajr = null;
-    if (sameDay(selected, dayStart(pkNow()))) {           // need tomorrow's Fajr after Isha
-      try { tomorrowFajr = clean((await getDay(addDays(selected, 1))).entry.timings.Fajr); } catch {}
-    }
+    tomorrowFajr = nextFajr = null;
+    // next day's Fajr: end of Isha time, and the countdown target after Isha
+    try { nextFajr = clean((await getDay(addDays(selected, 1))).entry.timings.Fajr); } catch {}
+    if (sameDay(selected, dayStart(pkNow()))) tomorrowFajr = nextFajr;
     status(cached ? t('cachedMsg') : '', 'info');
     $('#source').textContent = `${t('source')} · ${S.city} · ${cached ? t('cached') : t('live')}`;
     render(); tick(); buildTable(); buildJuma();
@@ -195,12 +220,14 @@ function render() {
   $('#sun').textContent = `🌅 ${t('sunrise')} (طلوع آفتاب): ${to12(clean(tm.Sunrise))}`;
   const fri = isFri(selected);
   $('#cards').innerHTML = PRAYERS.map(p => {
-    const juma = fri && p.k === 'Dhuhr';
+    const juma = fri && p.k === 'Dhuhr', end = endTime(current, p.k, nextFajr);
     return `
     <article class="card${juma ? ' juma' : ''}" data-p="${p.k}"><div class="ic">${juma ? '🕌' : p.ic}</div>
       <h3>${pName(selected, p.k)}</h3><small>${pAlt(selected, p)}</small>
-      <div class="t">${to12(pTime(selected, current, p.k))}</div>
-      ${juma ? `<small class="sub">${t('jamaat')} · ${t('khutbah')} ${to12(S.juma.khutbah)} · ${t('azan').split(' /')[0]} ${to12(clean(tm.Dhuhr))}</small>` : ''}</article>`;
+      <div class="trow"><span>${t('azanShort')}</span><b>${to12(clean(tm[p.k]))}</b></div>
+      ${juma ? `<div class="trow"><span>${t('khutbah')}</span><b>${to12(S.juma.khutbah)}</b></div>` : ''}
+      <div class="trow jam"><span>${t('jamaat')}</span><b class="t">${to12(jamTime(selected, current, p.k))}</b></div>
+      ${end ? `<small class="ends">${t('ends')} ${to12(end)}</small>` : ''}</article>`;
   }).join('');
   $('#datePick').value = iso(selected);
 }
@@ -211,7 +238,7 @@ function tick() {
   const now = pkNow();
   if (!sameDay(selected, dayStart(now))) {
     $('#heroLabel').textContent = t('viewing');
-    $('#heroName').textContent = '—'; $('#count').textContent = '--:--:--';
+    $('#heroName').textContent = '—'; $('#count').textContent = '--:--:--'; $('#heroSub').textContent = '';
     $('#sun').dataset.hint = t('backToday');
     document.querySelectorAll('.card').forEach(c => c.classList.remove('next'));
     return;
@@ -225,6 +252,8 @@ function tick() {
   $('#heroLabel').textContent = tomorrow ? t('nextTomorrow') : t('next');
   const nd = tomorrow ? addDays(selected, 1) : selected;
   $('#heroName').textContent = `${pName(nd, next.k)} · ${pAlt(nd, next)}`;
+  if (!tomorrow) $('#heroSub').textContent = `${t('azanShort')} ${to12(clean(current.timings[next.k]))} · ${t('jamaat')} ${to12(jamTime(nd, current, next.k))}`;
+  else $('#heroSub').textContent = `${t('azanShort')} ${to12(tomorrowFajr)}`;
   $('#count').textContent = `${f(Math.floor(sec / 3600))}:${f(Math.floor(sec % 3600 / 60))}:${f(sec % 60)}`;
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('next', !tomorrow && c.dataset.p === next.k));
   // Optional notification, only if the user enabled it and allowed permission
@@ -247,12 +276,10 @@ async function buildTable() {
       m.forEach((e, i) => days.push({ d: new Date(selected.getFullYear(), selected.getMonth(), i + 1), e }));
     }
   } catch { $('#table').innerHTML = ''; return; }
-  const head = `<tr><th>${t('date')}</th>${PRAYERS.map(p => `<th>${t('prayers')[p.k]}</th>`).join('')}</tr>`;
+  const head = `<tr><th>${t('date')}</th>${PRAYERS.map(p => `<th>${t('prayers')[p.k]}<small class="tj">${t('azanShort')} / ${t('jamaat')}</small></th>`).join('')}</tr>`;
   $('#table').innerHTML = head + days.map(({ d, e }) => `
     <tr class="${sameDay(d, selected) ? 'sel' : ''}${isFri(d) ? ' fri' : ''}"><td>${d.toLocaleDateString(locale(), { weekday:'short', day:'numeric', month:'short' })}</td>
-    ${PRAYERS.map(p => (p.k === 'Dhuhr' && isFri(d))
-      ? `<td title="${t('juma')} – ${t('jamaat')}">🕌 ${to12(pTime(d, e, p.k))}</td>`
-      : `<td>${to12(clean(e.timings[p.k]))}</td>`).join('')}</tr>`).join('');
+    ${PRAYERS.map(p => `<td>${to12(clean(e.timings[p.k]))}<small class="tj" title="${(p.k === 'Dhuhr' && isFri(d)) ? t('juma') + ' – ' : ''}${t('jamaat')}">${(p.k === 'Dhuhr' && isFri(d)) ? '🕌' : t('jamCol')} ${to12(jamTime(d, e, p.k))}</small></td>`).join('')}</tr>`).join('');
 }
 
 /* ---------- Jumu'ah panel: this or the next Friday ---------- */
@@ -334,7 +361,7 @@ function applyLang() {
   $('#langSel').value = S.lang;
   $('#cityName').textContent = cityName(city());
   document.title = t('app');
-  render(); tick(); buildTable(); buildJuma(); renderCities(); renderAdj();
+  render(); tick(); buildTable(); buildJuma(); renderCities(); renderAdj(); renderJam();
 }
 $('#langSel').onchange = e => { S.lang = e.target.value; store.set('lang', S.lang); applyLang(); };
 
@@ -358,6 +385,19 @@ function saveJuma() { store.set('juma', S.juma); syncJuma(); render(); tick(); b
   const id = k === 'khutbah' ? '#jKhutbah' : '#jJamaat';
   $(id).onchange = e => { if (/^\d{2}:\d{2}$/.test(e.target.value)) { S.juma[k] = e.target.value; saveJuma(); } else syncJuma(); };
 });
+function renderJam() {
+  $('#jamSet').innerHTML = Object.keys(JAM_DEFAULT).map(k => `<div class="jamrow"><span>${t('prayers')[k]}</span>
+    <label><input type="number" min="0" max="120" step="1" data-jam="${k}" data-f="after" value="${S.jam[k].after}"><small>${t('jamAfter')}</small></label>
+    <label><input type="time" data-jam="${k}" data-f="fixed" value="${S.jam[k].fixed}"><small>${t('jamFixed')}</small></label></div>`).join('');
+}
+function saveJam() { store.set('jam', S.jam); renderJam(); render(); tick(); buildTable(); }
+$('#jamSet').onchange = e => {
+  const k = e.target.dataset.jam; if (!k) return;
+  if (e.target.dataset.f === 'after') S.jam[k].after = Math.max(0, Math.min(120, Math.round(+e.target.value || 0)));
+  else S.jam[k].fixed = /^\d{2}:\d{2}$/.test(e.target.value) ? e.target.value : '';
+  saveJam();
+};
+$('#jamReset').onclick = () => { S.jam = {}; Object.keys(JAM_DEFAULT).forEach(k => S.jam[k] = { after: JAM_DEFAULT[k], fixed:'' }); saveJam(); };
 $('#jumaReset').onclick = () => { S.juma = { ...JUMA_DEFAULT }; saveJuma(); };
 syncJuma();
 $('#notify').onchange = async e => {
